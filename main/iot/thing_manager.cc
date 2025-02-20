@@ -4,44 +4,59 @@
 
 #define TAG "ThingManager"
 
-namespace iot {
+namespace iot
+{
 
-void ThingManager::AddThing(Thing* thing) {
-    things_.push_back(thing);
-}
+    ThingManager::ThingManager()
+    {
+        AddThing(iot::CreateThing("Fan"));
+    }
+    void ThingManager::AddThing(Thing *thing)
+    {
+        things_.push_back(thing);
+    }
 
-std::string ThingManager::GetDescriptorsJson() {
-    std::string json_str = "[";
-    for (auto& thing : things_) {
-        json_str += thing->GetDescriptorJson() + ",";
+    std::string ThingManager::GetDescriptorsJson()
+    {
+        std::string json_str = "[";
+        for (auto &thing : things_)
+        {
+            json_str += thing->GetDescriptorJson() + ",";
+        }
+        if (json_str.back() == ',')
+        {
+            json_str.pop_back();
+        }
+        json_str += "]";
+        return json_str;
     }
-    if (json_str.back() == ',') {
-        json_str.pop_back();
+ 
+    std::string ThingManager::GetStatesJson()
+    {
+        std::string json_str = "[";
+        for (auto &thing : things_)
+        {
+            json_str += thing->GetStateJson() + ",";
+        }
+        if (json_str.back() == ',')
+        {
+            json_str.pop_back();
+        }
+        json_str += "]";
+        return json_str;
     }
-    json_str += "]";
-    return json_str;
-}
 
-std::string ThingManager::GetStatesJson() {
-    std::string json_str = "[";
-    for (auto& thing : things_) {
-        json_str += thing->GetStateJson() + ",";
-    }
-    if (json_str.back() == ',') {
-        json_str.pop_back();
-    }
-    json_str += "]";
-    return json_str;
-}
-
-void ThingManager::Invoke(const cJSON* command) {
-    auto name = cJSON_GetObjectItem(command, "name");
-    for (auto& thing : things_) {
-        if (thing->name() == name->valuestring) {
-            thing->Invoke(command);
-            return;
+    void ThingManager::Invoke(const cJSON *command)
+    {
+        auto name = cJSON_GetObjectItem(command, "name");
+        for (auto &thing : things_)
+        {
+            if (thing->name() == name->valuestring)
+            {
+                thing->Invoke(command);
+                return;
+            }
         }
     }
-}
 
 } // namespace iot

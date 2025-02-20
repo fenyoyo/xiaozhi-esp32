@@ -29,7 +29,7 @@ public:
     void Invoke(const cJSON* command);
 
 private:
-    ThingManager() = default;
+    ThingManager();
     ~ThingManager() = default;
 
     std::vector<Thing*> things_;
