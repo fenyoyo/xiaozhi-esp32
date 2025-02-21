@@ -434,6 +434,15 @@ void Application::Start() {
         app->CheckNewVersion();
         vTaskDelete(NULL);
     }, "check_new_version", 4096 * 2, this, 1, nullptr);
+    //想要在这里执行initMiot函数，但是不知道怎么调用
+    xTaskCreate([](void* arg) {
+        auto& thing_manager = iot::ThingManager::GetInstance();
+        // thing_manager.AddThing(iot::CreateThing("Fan"));
+        thing_manager.InitMoit();
+        // Application* app = (Application*)arg;
+        // app->CheckNewVersion();
+        vTaskDelete(NULL);
+    }, "get_miot_info", 4096 * 2, this, 1, nullptr);
 
 
 #if CONFIG_USE_AUDIO_PROCESSING

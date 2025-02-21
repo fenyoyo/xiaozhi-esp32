@@ -3,7 +3,8 @@
 #include <esp_log.h>
 #include "iot/protocol.h"
 #include "application.h"
-
+#include "board.h"
+#include "iot/miot_device.h"
 #define TAG "Fan"
 
 namespace iot
@@ -35,7 +36,8 @@ namespace iot
         std::string ip = "192.168.2.103";
         std::string token = "2c94fc01d4399baa4e6a18c076de918d";
         uint32_t deviceID = 0;
-
+        uint32_t deviceStamp = 0;
+        MiotDevice miotDevice;
         std::map<std::string, SIID_PIID> miotSpec = {
             {"fan:on", {2, 1}},
             {"fan:fan-level", {2, 2}},
@@ -49,13 +51,42 @@ namespace iot
             {"indicator-light:on", {5, 1}}};
 
     public:
+        void initMiot() override
+        {
+            ESP_LOGI(TAG, "initMiot");
+            //TODO:初始化miot 从服务器上获取设备的属性
+            auto http = Board::GetInstance().CreateHttp();
+            std::string method = "GET";
+            if (!http->Open(method, "http://192.168.2.105:8080/", ""))
+            {
+                ESP_LOGE(TAG, "Failed to open HTTP connection");
+                delete http;
+            }
+            auto response = http->GetBody();
+            ESP_LOGI(TAG, "response:%s", response.c_str());
+            http->Close();
+            delete http;
+        }
+
         Fan() : Thing("Fan", "电风扇"), power_(false), level_(1)
         {
 
+            miotDevice = MiotDevice(ip, token);
             properties_.AddBooleanProperty("power", "电风扇是否打开", [this]() -> bool
                                            {  
-                                            Miot::InitHandshake(ip);
-                                            ESP_LOGI(TAG,"获取电风扇是否打开：%d",power_);
+                                            auto spec = miotSpec.find("fan:on");
+                                            std::string name = spec->first;
+                                            SIID_PIID sp = spec->second;
+                                            auto response=  miotDevice.getProperty(name, sp.siid, sp.piid);
+                                            if(response.empty())
+                                            {
+                                                return power_;
+                                            }
+                                            cJSON *root = cJSON_Parse(response.data());
+                                            cJSON *result = cJSON_GetObjectItem(root, "result");
+                                            cJSON *item = cJSON_GetArrayItem(result, 0);
+                                            cJSON *value = cJSON_GetObjectItem(item, "value");
+                                            power_ = value->valueint;
                                             return power_; });
             properties_.AddBooleanProperty("level", "风速", [this]() -> bool
                                            { return level_; });
@@ -87,10 +118,8 @@ namespace iot
                                        .siid = sp.siid,
                                        .piid = sp.piid,
                                        .value = 0};
-                                   SetProperty(params);
-                                   // return false;
-                               });
-            methods_.AddMethod("SetLevel", "风速", ParameterList({Parameter("level", "1-3档", kValueTypeNumber, true)}), [this](const ParameterList &parameters)
+                                   SetProperty(params); });
+            methods_.AddMethod("SetLevel", "风速", ParameterList({Parameter("level", "1-3档,一档风力最小", kValueTypeNumber, true)}), [this](const ParameterList &parameters)
                                {
                                    level_ = static_cast<int8_t>(parameters["level"].number());
                                    auto spec = miotSpec.find("fan:fan-level");
@@ -140,18 +169,22 @@ namespace iot
             jsonStr += "\"piid\": " + std::to_string(parameters.piid) + ",";
             jsonStr += "\"value\": " + std::to_string(parameters.value);
             jsonStr += "}]";
-
-            //
-            // xTaskCreate([](void *arg)
-            //             {
-            //             Fan* fan = (Fan*)arg;
-            //             fan->miot->Send("set_properties", jsonStr);
-            // vTaskDelete(NULL); }, "main_loop", 4096 * 2, this, 2, nullptr);
-
             Application::GetInstance().Schedule([this, jsonStr]()
                                                 { 
                                                     Miot miot(ip, token);
                                                     miot.Send("set_properties", jsonStr); });
+        };
+
+        void GetProperty(Parameters parameters)
+        {
+            std::string jsonStr = "[{\"did\": \"" + parameters.did + "\",";
+            jsonStr += "\"siid\": " + std::to_string(parameters.siid) + ",";
+            jsonStr += "\"piid\": " + std::to_string(parameters.piid);
+            jsonStr += "}]";
+            Application::GetInstance().Schedule([this, jsonStr]()
+                                                { 
+                                                    Miot miot(ip, token);
+                                                    miot.Send("get_properties", jsonStr); });
         };
     };
 

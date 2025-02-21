@@ -44,6 +44,7 @@ namespace iot
         // std::string checksumOrToken;
         // std::vector<unsigned char> checksumOrToken;
         std::string data;
+        bool success = false;
 
         //
         bool parse(const std::string &packetData);

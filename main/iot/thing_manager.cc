@@ -16,6 +16,14 @@ namespace iot
         things_.push_back(thing);
     }
 
+    void ThingManager::InitMoit()
+    {
+        for (auto &thing : things_)
+        {
+            thing->initMiot();
+        }
+    }
+
     std::string ThingManager::GetDescriptorsJson()
     {
         std::string json_str = "[";

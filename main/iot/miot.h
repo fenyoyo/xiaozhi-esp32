@@ -7,19 +7,21 @@ namespace iot
     class Miot
     {
     private:
-        std::string ip_;
         int port = 54321;
         int id = 2;
+        std::string ip_;
         std::string token_;
         uint32_t deviceID;
         uint32_t deviceStamp;
         bool _discovered = false;
         /* data */
     public:
-        void Send(const std::string &command, const std::string &payload);
+        Message Send(const std::string &command, const std::string &payload);
         Miot(const std::string &ip, const std::string &token);
         Message Handshake();
+        static std::string socketSend(const std::string &ip, const std::string &data);
         static Message InitHandshake(const std::string &ip);
+        static Message getDeviceProperties(const std::string &ip, const std::string &token, uint32_t deviceID, uint32_t deviceStamp);
         std::string createRequest(const std::string &command, const std::string &parameters);
     };
 

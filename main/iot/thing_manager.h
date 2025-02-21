@@ -23,6 +23,7 @@ public:
     ThingManager& operator=(const ThingManager&) = delete;
 
     void AddThing(Thing* thing);
+    void InitMoit();
 
     std::string GetDescriptorsJson();
     std::string GetStatesJson();
