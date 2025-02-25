@@ -1,16 +1,14 @@
 #include "thing_manager.h"
+#include "system_info.h"
+#include "cJSON.h"
 
 #include <esp_log.h>
+#include <board.h>
 
 #define TAG "ThingManager"
 
 namespace iot
 {
-
-    ThingManager::ThingManager()
-    {
-        AddThing(iot::CreateThing("Fan"));
-    }
     void ThingManager::AddThing(Thing *thing)
     {
         things_.push_back(thing);
@@ -18,10 +16,77 @@ namespace iot
 
     void ThingManager::InitMoit()
     {
-        for (auto &thing : things_)
+        // 请求网络，获取micloud的设备列表
+        // 发送广播，查看在线设备
+        // TODO:经常性获取失败，需要重试
+        std::string mac = SystemInfo::GetMacAddress();
+        std::string url = "http://192.168.2.104:8000/api/v1/device/" + mac;
+        auto http = Board::GetInstance().CreateHttp();
+        std::string method = "GET";
+        if (!http->Open(method, url, ""))
         {
-            thing->initMiot();
+            ESP_LOGE(TAG, "Failed to open HTTP connection");
+            delete http;
+            return;
         }
+        auto response = http->GetBody();
+        ESP_LOGI(TAG, "response:%s", response.c_str());
+
+        if (response.empty())
+        {
+            ESP_LOGE(TAG, "Failed to get response from server 2");
+            http->Close();
+            delete http;
+            return;
+        }
+        // 判断是否是json格式
+
+        cJSON *root = cJSON_Parse(response.data());
+        if (root == nullptr)
+        {
+            ESP_LOGE(TAG, "Failed to parse json");
+            http->Close();
+            delete http;
+            return;
+        }
+
+        cJSON *data = cJSON_GetObjectItem(root, "data");
+        cJSON *list = cJSON_GetObjectItem(data, "list");
+        int size = cJSON_GetArraySize(list);
+        for (int i = 0; i < size; i++)
+        {
+            cJSON *item = cJSON_GetArrayItem(list, i);
+            cJSON *name = cJSON_GetObjectItem(item, "name");
+            cJSON *model = cJSON_GetObjectItem(item, "model");
+            cJSON *ip = cJSON_GetObjectItem(item, "localip");
+            cJSON *token = cJSON_GetObjectItem(item, "token");
+            std::string model_str = processString(model->valuestring);
+            ESP_LOGI(TAG, "name:%s", name->valuestring);
+            ESP_LOGI(TAG, "model:%s", model->valuestring);
+            ESP_LOGI(TAG, "ip:%s", ip->valuestring);
+            ESP_LOGI(TAG, "token:%s", token->valuestring);
+            ESP_LOGI(TAG, "model_str:%s", model_str.c_str());
+            // ESP_LOGI(TAG, "name:%s,model:%s,ip:%s,token:%s", model_str.data(), model->valuestring, ip->valuestring, token->valuestring);
+            auto thing = CreateThing(model_str);
+            if (thing == nullptr)
+            {
+                ESP_LOGE(TAG, "Failed to create thing");
+                continue;
+            }
+            thing->initMiot(ip->valuestring, token->valuestring, name->valuestring);
+            // thing->set_ip(ip->valuestring);
+            // thing->set_token(token->valuestring);
+            AddThing(thing);
+        }
+
+        http->Close();
+        delete http;
+
+        // AddThing(iot::CreateThing("Fan"));
+        // for (auto &thing : things_)
+        // {
+        //     thing->initMiot();
+        // }
     }
 
     std::string ThingManager::GetDescriptorsJson()
@@ -36,9 +101,10 @@ namespace iot
             json_str.pop_back();
         }
         json_str += "]";
+        ESP_LOGI(TAG, "json_str:%s", json_str.c_str());
         return json_str;
     }
- 
+
     std::string ThingManager::GetStatesJson()
     {
         std::string json_str = "[";
@@ -65,6 +131,28 @@ namespace iot
                 return;
             }
         }
+    }
+
+    std::string ThingManager::processString(const std::string &input)
+    {
+        std::string result;
+        for (char c : input)
+        {
+            if (c == '.')
+            {
+                result += '_';
+            }
+            else if (std::isalpha(c))
+            {
+                result += std::toupper(c);
+            }
+            else
+            {
+                result += c;
+            }
+        }
+        return result;
+        // return std::string();
     }
 
 } // namespace iot

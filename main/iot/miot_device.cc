@@ -41,7 +41,6 @@ namespace iot
             return "";
         }
         auto res = msg.decrypt(token_);
-        ESP_LOGI(TAG, "msg.data:%s", msg.data.data());
         return res;
     }
 } // namespace iot

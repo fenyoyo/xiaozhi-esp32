@@ -269,10 +269,13 @@ public:
     virtual std::string GetDescriptorJson();
     virtual std::string GetStateJson();
     virtual void Invoke(const cJSON* command);
-    virtual void initMiot();
+    virtual void initMiot(const std::string& ip, const std::string& token,const std::string& name);
 
     const std::string& name() const { return name_; }
+    void set_name(const std::string& name) { name_ = name; }
     const std::string& description() const { return description_; }
+
+    void set_description(const std::string& description) { description_ = description; }
 
 protected:
     PropertyList properties_;

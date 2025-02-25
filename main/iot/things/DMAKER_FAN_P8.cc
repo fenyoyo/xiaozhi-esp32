@@ -5,7 +5,8 @@
 #include "application.h"
 #include "board.h"
 #include "iot/miot_device.h"
-#define TAG "Fan"
+
+#define TAG "DMAKER_FAN_P8"
 
 namespace iot
 {
@@ -24,7 +25,7 @@ namespace iot
     };
 
     // 这里仅定义 Lamp 的属性和方法，不包含具体的实现
-    class Fan : public Thing
+    class DMAKER_FAN_P8 : public Thing
     {
     private:
         bool id_ = 2;
@@ -53,26 +54,15 @@ namespace iot
     public:
         void initMiot(const std::string &ip, const std::string &token, const std::string &name) override
         {
-            // ESP_LOGI(TAG, "initMiot");
+            ESP_LOGI(TAG, "initMiot DMAKER_FAN_P8");
             // 初始化miot 从服务器上获取设备的属性
             ip_ = ip;
             token_ = token;
             set_name(name);
             miotDevice = MiotDevice(ip_, token_);
-            // auto http = Board::GetInstance().CreateHttp();
-            // std::string method = "GET";
-            // if (!http->Open(method, "http://192.168.2.105:8080/", ""))
-            // {
-            //     ESP_LOGE(TAG, "Failed to open HTTP connection");
-            //     delete http;
-            // }
-            // auto response = http->GetBody();
-            // ESP_LOGI(TAG, "response:%s", response.c_str());
-            // http->Close();
-            // delete http;
         }
 
-        Fan() : Thing("Fan", "电风扇"), power_(false), level_(1)
+        DMAKER_FAN_P8() : Thing("DMAKER_FAN_P8", "电风扇"), power_(false), level_(1)
         {
 
             properties_.AddBooleanProperty("power", "电风扇是否打开", [this]() -> bool
@@ -174,7 +164,7 @@ namespace iot
             jsonStr += "}]";
             Application::GetInstance().Schedule([this, jsonStr]()
                                                 { 
-                                                    Miot miot(ip_, ip_);
+                                                    Miot miot(ip_, token_);
                                                     miot.Send("set_properties", jsonStr); });
         };
 
@@ -186,11 +176,11 @@ namespace iot
             jsonStr += "}]";
             Application::GetInstance().Schedule([this, jsonStr]()
                                                 { 
-                                                    Miot miot(ip_, ip_);
+                                                    Miot miot(ip_, token_);
                                                     miot.Send("get_properties", jsonStr); });
         };
     };
 
 } // namespace iot
 
-DECLARE_THING(Fan);
+DECLARE_THING(DMAKER_FAN_P8);

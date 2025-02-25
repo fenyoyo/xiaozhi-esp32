@@ -19,9 +19,9 @@ namespace iot
         Message Send(const std::string &command, const std::string &payload);
         Miot(const std::string &ip, const std::string &token);
         Message Handshake();
-        static std::string socketSend(const std::string &ip, const std::string &data);
-        static Message InitHandshake(const std::string &ip);
-        static Message getDeviceProperties(const std::string &ip, const std::string &token, uint32_t deviceID, uint32_t deviceStamp);
+        // static std::string socketSend(const std::string &ip, const std::string &data);
+        // static Message InitHandshake(const std::string &ip);
+        // static Message getDeviceProperties(const std::string &ip, const std::string &token, uint32_t deviceID, uint32_t deviceStamp);
         std::string createRequest(const std::string &command, const std::string &parameters);
     };
 

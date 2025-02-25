@@ -12,6 +12,7 @@ namespace iot
 
     void RegisterThing(const std::string &type, std::function<Thing *()> creator)
     {
+        ESP_LOGI(TAG, "RegisterThing:%s", type.c_str());
         if (thing_creators == nullptr)
         {
             thing_creators = new std::map<std::string, std::function<Thing *()>>();
@@ -89,7 +90,7 @@ namespace iot
         }
     }
 
-    void Thing::initMiot()
+    void Thing::initMiot(const std::string& ip, const std::string& token,const std::string& name)
     {
     }
 

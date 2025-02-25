@@ -1,7 +1,6 @@
 #ifndef THING_MANAGER_H
 #define THING_MANAGER_H
 
-
 #include "thing.h"
 
 #include <cJSON.h>
@@ -11,31 +10,34 @@
 #include <functional>
 #include <map>
 
-namespace iot {
+namespace iot
+{
 
-class ThingManager {
-public:
-    static ThingManager& GetInstance() {
-        static ThingManager instance;
-        return instance;
-    }
-    ThingManager(const ThingManager&) = delete;
-    ThingManager& operator=(const ThingManager&) = delete;
+    class ThingManager
+    {
+    public:
+        static ThingManager &GetInstance()
+        {
+            static ThingManager instance;
+            return instance;
+        }
+        ThingManager(const ThingManager &) = delete;
+        ThingManager &operator=(const ThingManager &) = delete;
 
-    void AddThing(Thing* thing);
-    void InitMoit();
+        void AddThing(Thing *thing);
+        void InitMoit();
 
-    std::string GetDescriptorsJson();
-    std::string GetStatesJson();
-    void Invoke(const cJSON* command);
+        std::string GetDescriptorsJson();
+        std::string GetStatesJson();
+        void Invoke(const cJSON *command);
+        std::string processString(const std::string &input);
 
-private:
-    ThingManager();
-    ~ThingManager() = default;
+    private:
+        ThingManager() = default;
+        ~ThingManager() = default;
 
-    std::vector<Thing*> things_;
-};
-
+        std::vector<Thing *> things_;
+    };
 
 } // namespace iot
 
