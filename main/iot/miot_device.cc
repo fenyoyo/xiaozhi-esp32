@@ -31,12 +31,22 @@ namespace iot
         jsonStr += "\"value\": " + std::to_string(value);
         jsonStr += "}]";
         return send("set_properties", jsonStr);
+    }
+    std::string MiotDevice::callAction(const uint8_t &siid, const uint8_t &piid)
+    {
+        std::string jsonStr = "{\"did\": \"call-" + std::to_string(siid) + "-" + std::to_string(piid) + "\",";
+        jsonStr += "\"siid\": " + std::to_string(siid) + ",";
+        jsonStr += "\"aiid\": " + std::to_string(piid) + ",";
+        jsonStr += "\"in\": []";
+        jsonStr += "}";
+        return send("action", jsonStr);
+        return std::string();
     };
 
     std::string MiotDevice::send(const std::string &command, const std::string &parameters)
     {
         Miot miot(ip_, token_);
-        // ESP_LOGI(TAG, "send command:%s,parameters:%s", command.c_str(), parameters.c_str());
+        ESP_LOGI(TAG, "send command:%s,parameters:%s", command.c_str(), parameters.c_str());
         Message msg = miot.Send(command, parameters);
         if (msg.success == false)
         {
@@ -46,7 +56,19 @@ namespace iot
         auto res = msg.decrypt(token_);
         return res;
     }
-
+    void MiotDevice::parseJsonHasError(const std::string &jsonStr, int8_t *value_)
+    {
+        cJSON *root = cJSON_Parse(jsonStr.data());
+        cJSON *error = cJSON_GetObjectItem(root, "error");
+        if (error != NULL)
+        {
+            cJSON *code = cJSON_GetObjectItem(error, "code");
+            cJSON *message = cJSON_GetObjectItem(error, "message");
+            ESP_LOGE(TAG, "error:%s", message->valuestring);
+            *value_ = -1;
+            return;
+        }
+    }
     void MiotDevice::parseJsonGetValue(const std::string &jsonStr, uint8_t *value_)
     {
         cJSON *root = cJSON_Parse(jsonStr.data());
@@ -63,11 +85,16 @@ namespace iot
         cJSON *result = cJSON_GetObjectItem(root, "result");
         cJSON *item = cJSON_GetArrayItem(result, index);
         cJSON *code = cJSON_GetObjectItem(item, "code");
-
-        // cJSON *root = cJSON_Parse(jsonStr.data());
-        // cJSON *result = cJSON_GetObjectItem(root, "result");
-        // cJSON *item = cJSON_GetArrayItem(result, 0);
-        // cJSON *value = cJSON_GetObjectItem(item, "code");
         *code_ = code->valueint;
     }
+
+    void MiotDevice::parseCallGetCode(const std::string &jsonStr, uint8_t *code_)
+    {
+
+        cJSON *root = cJSON_Parse(jsonStr.data());
+        cJSON *result = cJSON_GetObjectItem(root, "result");
+        cJSON *code = cJSON_GetObjectItem(result, "code");
+        *code_ = code->valueint;
+    }
+    
 } // namespace iot
