@@ -9,20 +9,6 @@
 
 namespace iot
 {
-    struct Parameters
-    {
-        std::string did;
-        int8_t siid;
-        int8_t piid;
-        int8_t value;
-    };
-
-    struct SIID_PIID
-    {
-        int8_t siid;
-        int8_t piid;
-    };
-
     // 这里仅定义 Lamp 的属性和方法，不包含具体的实现
     class Fan : public Thing
     {

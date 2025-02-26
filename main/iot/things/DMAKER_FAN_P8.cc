@@ -10,20 +10,6 @@
 
 namespace iot
 {
-    struct Parameters
-    {
-        std::string did;
-        int8_t siid;
-        int8_t piid;
-        int8_t value;
-    };
-
-    struct SIID_PIID
-    {
-        int8_t siid;
-        int8_t piid;
-    };
-
     // 这里仅定义 Lamp 的属性和方法，不包含具体的实现
     class DMAKER_FAN_P8 : public Thing
     {
@@ -31,7 +17,8 @@ namespace iot
         bool id_ = 2;
         bool power_ = false;
         bool mode_ = 0;
-        int8_t level_ = 1;
+        uint8_t level_ = 1;
+        uint8_t minutes = 0;
         bool horizontal = false;
 
         std::string ip_;
@@ -55,7 +42,6 @@ namespace iot
         void initMiot(const std::string &ip, const std::string &token, const std::string &name) override
         {
             ESP_LOGI(TAG, "initMiot DMAKER_FAN_P8");
-            // 初始化miot 从服务器上获取设备的属性
             ip_ = ip;
             token_ = token;
             set_name(name);
@@ -75,110 +61,153 @@ namespace iot
                                             {
                                                 return power_;
                                             }
-                                            cJSON *root = cJSON_Parse(response.data());
-                                            cJSON *result = cJSON_GetObjectItem(root, "result");
-                                            cJSON *item = cJSON_GetArrayItem(result, 0);
-                                            cJSON *value = cJSON_GetObjectItem(item, "value");
-                                            power_ = value->valueint;
+                                            uint8_t value;
+                                            miotDevice.parseJsonGetValue(response, &value);
+                                            power_ = value;
                                             return power_; });
-            properties_.AddBooleanProperty("level", "风速", [this]() -> bool
-                                           { return level_; });
 
-            // 定义设备可以被远程执行的指令
+            properties_.AddNumberProperty("level", "风速", [this]() -> int
+                                          {
+                                              auto spec = miotSpec.find("fan:fan-level");
+                                              if (spec == miotSpec.end())
+                                              {
+                                                  return level_;
+                                              }
+                                              std::string name = spec->first;
+                                              SIID_PIID sp = spec->second;
+                                              auto response = miotDevice.getProperty(name, sp.siid, sp.piid);
+                                              if (response.empty())
+                                              {
+                                                  return level_;
+                                              }
+                                              miotDevice.parseJsonGetValue(response, &level_);
+                                              return level_;
+                                              //
+                                          });
+
             methods_.AddMethod("TurnOn", "打开电风扇", ParameterList(), [this](const ParameterList &parameters)
                                {
-                                   power_ = true;
+                                   //    power_ = true;
                                    auto spec = miotSpec.find("fan:on");
-                                   std::string name = spec->first;
+                                   std::string did = spec->first;
                                    SIID_PIID sp = spec->second;
                                    Parameters params = {
-                                       .did = name,
+                                       .did = did,
                                        .siid = sp.siid,
                                        .piid = sp.piid,
                                        .value = 1};
-                                   SetProperty(params);
-                                   // return true;
+                                   auto res = miotDevice.setProperty(did, sp.siid, sp.piid, 1);
+                                   if (res.empty())
+                                   {
+                                       return;
+                                   }
+                                   cJSON *root = cJSON_Parse(res.data());
+                                   cJSON *result = cJSON_GetObjectItem(root, "result");
+                                   cJSON *item = cJSON_GetArrayItem(result, 0);
+                                   cJSON *code = cJSON_GetObjectItem(item, "code");
+                                   if (code->valueint != 0)
+                                   {
+                                       power_ = true;
+                                   } //
                                });
 
             methods_.AddMethod("TurnOff", "关闭电风扇", ParameterList(), [this](const ParameterList &parameters)
                                {
-                                   power_ = false;
+                                   //    power_ = false;
                                    auto spec = miotSpec.find("fan:on");
-                                   std::string name = spec->first;
+                                   std::string did = spec->first;
                                    SIID_PIID sp = spec->second;
-                                   Parameters params = {
-                                       .did = name,
-                                       .siid = sp.siid,
-                                       .piid = sp.piid,
-                                       .value = 0};
-                                   SetProperty(params); });
+                                   auto res = miotDevice.setProperty(did, sp.siid, sp.piid, 0);
+                                   if (res.empty())
+                                   {
+                                       return;
+                                   }
+                                   cJSON *root = cJSON_Parse(res.data());
+                                   cJSON *result = cJSON_GetObjectItem(root, "result");
+                                   cJSON *item = cJSON_GetArrayItem(result, 0);
+                                   cJSON *code = cJSON_GetObjectItem(item, "code");
+                                   if (code->valueint == 0)
+                                   {
+                                       power_ = false;
+                                   } //
+                               });
             methods_.AddMethod("SetLevel", "风速", ParameterList({Parameter("level", "1-3档,一档风力最小", kValueTypeNumber, true)}), [this](const ParameterList &parameters)
                                {
-                                   level_ = static_cast<int8_t>(parameters["level"].number());
+                                   auto tmp_level_ = static_cast<int8_t>(parameters["level"].number());
                                    auto spec = miotSpec.find("fan:fan-level");
-                                   std::string name = spec->first;
+                                   std::string did = spec->first;
                                    SIID_PIID sp = spec->second;
-                                   Parameters params = {
-                                       .did = name,
-                                       .siid = sp.siid,
-                                       .piid = sp.piid,
-                                       .value = level_};
-                                   SetProperty(params);
-                                   // return false;
+                                   auto res = miotDevice.setProperty(did, sp.siid, sp.piid, tmp_level_);
+                                   if (res.empty())
+                                   {
+                                       return;
+                                   }
+                                   uint8_t code;
+                                   miotDevice.parseJsonGetCode(res, 0, &code);
+                                   if (code == 0)
+                                   {
+                                       level_ = tmp_level_;
+                                   } //
                                });
             methods_.AddMethod("SetHorizontal", "开启或关闭左右摇摆", ParameterList({Parameter("horizontal", "开启或关闭", kValueTypeBoolean, true)}), [this](const ParameterList &parameters)
-                               { 
-                                horizontal = parameters["horizontal"].boolean();
-                                
-                                auto spec = miotSpec.find("fan:horizontal-swing");
-                                std::string name = spec->first;
-                                SIID_PIID sp = spec->second;
-                                Parameters params = {
-                                    .did = name,
-                                    .siid = sp.siid,
-                                    .piid = sp.piid,
-                                    .value = horizontal};
-                                SetProperty(params); });
+                               {
+                                   auto tmp_horizontal_ = parameters["horizontal"].boolean();
+                                   auto spec = miotSpec.find("fan:horizontal-swing");
+                                   std::string did = spec->first;
+                                   SIID_PIID sp = spec->second;
+                                   auto res = miotDevice.setProperty(did, sp.siid, sp.piid, tmp_horizontal_);
+                                   if (res.empty())
+                                   {
+                                       return;
+                                   }
+                                   uint8_t code;
+                                   miotDevice.parseJsonGetCode(res, 0, &code);
+                                   if (code == 0)
+                                   {
+                                       horizontal = tmp_horizontal_;
+                                   }
+                                   //
+                               });
 
             methods_.AddMethod("SetMode", "切换电风扇吹风模式", ParameterList({Parameter("mode", "直吹模式=0,睡眠模式=1", kValueTypeNumber, true)}), [this](const ParameterList &parameters)
-                               { 
-                                mode_ = static_cast<int8_t>(parameters["mode"].number());
-                                
-                                auto spec = miotSpec.find("fan:mode");
-                                std::string name = spec->first;
-                                SIID_PIID sp = spec->second;
-                                Parameters params = {
-                                    .did = name,
-                                    .siid = sp.siid,
-                                    .piid = sp.piid,
-                                    .value = mode_};
-                                SetProperty(params); });
+                               {
+                                   auto tmp_mode_ = static_cast<int8_t>(parameters["mode"].number());
+                                   auto spec = miotSpec.find("fan:mode");
+                                   std::string did = spec->first;
+                                   SIID_PIID sp = spec->second;
+                                   auto res = miotDevice.setProperty(did, sp.siid, sp.piid, tmp_mode_);
+                                   if (res.empty())
+                                   {
+                                       return;
+                                   }
+                                   uint8_t code;
+                                   miotDevice.parseJsonGetCode(res, 0, &code);
+                                   if (code == 0)
+                                   {
+                                       mode_ = tmp_mode_;
+                                   }
+                                   //
+                               });
+            methods_.AddMethod("SetOffDelayTime", "定时关闭", ParameterList({Parameter("minutes", "0-480分钟", kValueTypeNumber, true)}), [this](const ParameterList &parameters)
+                               {
+                                   auto tmp_minutes = static_cast<int8_t>(parameters["minutes"].number());
+                                   auto spec = miotSpec.find("fan:off-delay-time");
+                                   std::string did = spec->first;
+                                   SIID_PIID sp = spec->second;
+                                   auto res = miotDevice.setProperty(did, sp.siid, sp.piid, tmp_minutes);
+                                   if (res.empty())
+                                   {
+                                       return;
+                                   }
+                                   uint8_t code;
+                                   miotDevice.parseJsonGetCode(res, 0, &code);
+                                   if (code == 0)
+                                   {
+                                       minutes = tmp_minutes;
+                                   }
+                                   //
+                               });
         }
-
-        void SetProperty(Parameters parameters)
-        {
-            std::string jsonStr = "[{\"did\": \"" + parameters.did + "\",";
-            jsonStr += "\"siid\": " + std::to_string(parameters.siid) + ",";
-            jsonStr += "\"piid\": " + std::to_string(parameters.piid) + ",";
-            jsonStr += "\"value\": " + std::to_string(parameters.value);
-            jsonStr += "}]";
-            Application::GetInstance().Schedule([this, jsonStr]()
-                                                { 
-                                                    Miot miot(ip_, token_);
-                                                    miot.Send("set_properties", jsonStr); });
-        };
-
-        void GetProperty(Parameters parameters)
-        {
-            std::string jsonStr = "[{\"did\": \"" + parameters.did + "\",";
-            jsonStr += "\"siid\": " + std::to_string(parameters.siid) + ",";
-            jsonStr += "\"piid\": " + std::to_string(parameters.piid);
-            jsonStr += "}]";
-            Application::GetInstance().Schedule([this, jsonStr]()
-                                                { 
-                                                    Miot miot(ip_, token_);
-                                                    miot.Send("get_properties", jsonStr); });
-        };
     };
 
 } // namespace iot

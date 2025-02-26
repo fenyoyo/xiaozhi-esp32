@@ -23,6 +23,8 @@ namespace iot
                                 const uint8_t &value);
 
         std::string send(const std::string &command, const std::string &parameters);
+        static void parseJsonGetValue(const std::string &jsonStr, uint8_t *value_);
+        static void parseJsonGetCode(const std::string &jsonStr, const uint8_t &index, uint8_t *code_);
     };
 } // namespace iot
 

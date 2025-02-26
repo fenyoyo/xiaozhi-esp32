@@ -4,6 +4,20 @@
 #include <iot/protocol.h>
 namespace iot
 {
+    struct Parameters
+    {
+        std::string did;
+        int8_t siid;
+        int8_t piid;
+        int8_t value;
+    };
+
+    struct SIID_PIID
+    {
+        int8_t siid;
+        int8_t piid;
+    };
+
     class Miot
     {
     private:
