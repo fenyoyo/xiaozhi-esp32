@@ -65,7 +65,7 @@ namespace iot
         }
 
         std::string rx_buffer;
-        rx_buffer.resize(256);
+        rx_buffer.resize(512);
         int len = recv(socket_handle, rx_buffer.data(), rx_buffer.size(), 0);
         if (len < 0)
         {

@@ -91,11 +91,6 @@ namespace iot
                                    auto spec = miotSpec.find("fan:on");
                                    std::string did = spec->first;
                                    SIID_PIID sp = spec->second;
-                                   Parameters params = {
-                                       .did = did,
-                                       .siid = sp.siid,
-                                       .piid = sp.piid,
-                                       .value = 1};
                                    auto res = miotDevice.setProperty(did, sp.siid, sp.piid, 1);
                                    if (res.empty())
                                    {

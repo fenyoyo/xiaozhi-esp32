@@ -1,12 +1,32 @@
 
 #ifndef MIOT_DEVICE_H
 #define MIOT_DEVICE_H
-
+#include <map>
 #include <string>
 #include <cstdint>
+#define MOIT_ON 1
+#define MOIT_OFF 0
+
+#define MOIT_PROPERTY false
+#define MOIT_ACTION true
+
+#define MOIT_PROPERTY_BOOL 0
+#define MOIT_PROPERTY_INT 1
+#define MOIT_PROPERTY_STRING 2
 
 namespace iot
 {
+    struct SIID_PIID
+    {
+
+        int8_t siid;
+        int8_t piid;
+        bool isAction = false;
+        int8_t type = 0;
+        int value = 0;
+        std::string description = "";
+    };
+
     class MiotDevice
     {
     private:
@@ -18,13 +38,17 @@ namespace iot
         MiotDevice(const std::string &ip, const std::string &token);
 
         std::string getProperty(const std::string &did, const uint8_t &siid, const uint8_t &piid);
+        std::map<std::string, int> getProperties(const std::map<std::string, SIID_PIID> &properties);
+        // int8_t getPropertyDoubleValue(const std::string &did, const uint8_t &siid, const uint8_t &piid, double *value);
+        // int8_t getPropertyIntValue(const std::string &did, const uint8_t &siid, const uint8_t &piid, int *value);
 
         std::string setProperty(const std::string &did, const uint8_t &siid, const uint8_t &piid,
-                                const uint8_t &value);
+                                const uint8_t &value, const bool &isBool = false);
         /**
-         * 调用action 
+         * 调用action
          */
         std::string callAction(const uint8_t &siid, const uint8_t &piid);
+        std::string callAction(const uint8_t &siid, const uint8_t &piid,const uint8_t &value);
 
         std::string send(const std::string &command, const std::string &parameters);
         /**

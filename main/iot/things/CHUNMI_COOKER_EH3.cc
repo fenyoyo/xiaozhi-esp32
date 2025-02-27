@@ -6,17 +6,17 @@
 #include "iot/miot_device.h"
 #include "board.h"
 
-#define TAG "ZHIMI_AIRP_RMA3"
+#define TAG "CHUNMI_COOKER_EH3"
 
 namespace iot
 {
     // 这里仅定义 Lamp 的属性和方法，不包含具体的实现
-    class ZHIMI_AIRP_RMA3 : public Thing
+    class CHUNMI_COOKER_EH3 : public Thing
     {
     private:
         bool id_ = 2;
         bool power_ = false;
-        bool mode_ = 0;
+        // bool mode_ = 0;
         uint8_t fault = 100;
         uint8_t humidity_ = 0;
         uint16_t pm25_ = 0;
@@ -31,13 +31,14 @@ namespace iot
         // fault 滤芯
         // mode 模式 0自动 1睡眠 2喜爱
         std::map<std::string, SIID_PIID> miotSpec = {
-            {"air-purifier:on", {2, 1, MOIT_PROPERTY, MOIT_PROPERTY_BOOL, 0, "开关"}},
-            {"air-purifier:mode", {2, 4, MOIT_PROPERTY, MOIT_PROPERTY_INT, 0, "模式"}},
-            {"air-purifier:relative-humidity", {3, 1, MOIT_PROPERTY, MOIT_PROPERTY_INT, 0, "空气湿度"}},
-            {"air-purifier:pm2.5-density", {3, 4, MOIT_PROPERTY, MOIT_PROPERTY_INT, 0, "pm2.5"}},
-            {"air-purifier:temperature", {3, 7, MOIT_PROPERTY, MOIT_PROPERTY_INT, 0, "温度"}},
-            {"air-purifier:air-quality", {3, 8, MOIT_PROPERTY, MOIT_PROPERTY_INT, 0, "空气质量"}},
+            {"cooker:status", {2, 1, MOIT_PROPERTY, MOIT_PROPERTY_INT, 0, "状态:1=闲置,2=工作中,3=任务工作中,4=保暖,5=错误,6=更新中,7=烹煮完成"}},
+            {"cooker:cook-mode", {2, 5, MOIT_PROPERTY, MOIT_PROPERTY_INT, 0, "模式:1=精细煮,2=快速煮,3=煮粥,4=保暖,5=定制"}},
+            {"cooker:start-cook", {2, 1, MOIT_PROPERTY, MOIT_PROPERTY_INT, 0, "开始煮"}},
+            {"cooker:cancel-cooking", {3, 7, MOIT_PROPERTY, MOIT_PROPERTY_INT, 0, "取消"}},
         };
+
+        //TODO 把属性和方法分离出来
+        
 
     public:
         void initMiot(const std::string &ip, const std::string &token, const std::string &name) override
@@ -48,7 +49,7 @@ namespace iot
             miotDevice = MiotDevice(ip_, token_);
         }
 
-        ZHIMI_AIRP_RMA3() : Thing("ZHIMI_AIRP_RMA3", "空气净化器"), power_(false)
+        CHUNMI_COOKER_EH3() : Thing("CHUNMI_COOKER_EH3", "电饭煲"), power_(false)
         {
 
             properties_.AddBooleanProperty("properties", "获取设备所有状态", [this]() -> bool
@@ -125,109 +126,62 @@ namespace iot
             //                                   //
             //                               });
 
-            methods_.AddMethod("TurnOn", "打开空气净化器", ParameterList(), [this](const ParameterList &parameters)
+            methods_.AddMethod("startCook", "开始煮:1=精细煮,2=快速煮,3=煮粥,4=保暖,5=定制", ParameterList({Parameter("mode", "直吹模式=0,睡眠模式=1", kValueTypeNumber, true)}), [this](const ParameterList &parameters)
                                {
                                    //    power_ = true;
-                                   auto spec = miotSpec.find("air-purifier:on");
+                                   auto mode_ = static_cast<int8_t>(parameters["mode"].number());
+                                   auto spec = miotSpec.find("cooker:start-cook");
                                    std::string did = spec->first;
                                    SIID_PIID sp = spec->second;
-                                   auto res = miotDevice.setProperty(did, sp.siid, sp.piid, MOIT_ON, true);
+                                   auto res = miotDevice.callAction(sp.siid, sp.piid, mode_);
+                                   ESP_LOGI(TAG, "power response:%s", res.c_str());
+                                   //    auto res = miotDevice.setProperty(did, sp.siid, sp.piid, 1);
                                    if (res.empty())
                                    {
                                        return;
                                    }
-                                   uint8_t code;
-                                   miotDevice.parseJsonGetCode(res, 0, &code);
-                                   if (code == 0)
-                                   {
-                                    power_ = true;
-                                   } });
-            methods_.AddMethod("TurnOff", "关闭空气净化器", ParameterList(), [this](const ParameterList &parameters)
-                               {
-                                       //    power_ = true;
-                                       auto spec = miotSpec.find("air-purifier:on");
-                                       std::string did = spec->first;
-                                       SIID_PIID sp = spec->second;
-                                       auto res = miotDevice.setProperty(did, sp.siid, sp.piid, MOIT_OFF, true);
-                                       if (res.empty())
-                                       {
-                                           return;
-                                       }
-                                       uint8_t code;
-                                       miotDevice.parseJsonGetCode(res, 0, &code);
-                                       if (code == 0)
-                                       {
-                                        power_ = true;
-                                       } });
-
-            // methods_.AddMethod("Toggle", "切换开关状态", ParameterList(), [this](const ParameterList &parameters)
-            //                    {
-            //                        //    power_ = true;
-            //                        auto spec = miotSpec.find("air-purifier:toggle");
-            //                        std::string did = spec->first;
-            //                        SIID_PIID sp = spec->second;
-            //                        auto res = miotDevice.callAction(sp.siid, sp.piid);
-            //                        ESP_LOGI(TAG, "power response:%s", res.c_str());
-            //                        //    auto res = miotDevice.setProperty(did, sp.siid, sp.piid, 1);
-            //                        if (res.empty())
-            //                        {
-            //                            return;
-            //                        }
-            //                        int8_t error;
-            //                        miotDevice.parseJsonHasError(res, &error);
-            //                        if (error == -1)
-            //                        {
-            //                            return;
-            //                        }
-            //                        uint8_t code;
-            //                        miotDevice.parseCallGetCode(res, &code);
-            //                        if (code == 0)
-            //                        {
-            //                            power_ = !power_;
-            //                        } //
-            //                    });
-
-            methods_.AddMethod("SetMode", "切换电风扇吹风模式", ParameterList({Parameter("mode", "自动模式=0,睡眠模式=1,最爱模式=2", kValueTypeNumber, true)}), [this](const ParameterList &parameters)
-                               {
-                                   auto tmp_mode_ = static_cast<int8_t>(parameters["mode"].number());
-                                   auto spec = miotSpec.find("air-purifier:mode");
-                                   std::string did = spec->first;
-                                   SIID_PIID sp = spec->second;
-                                   auto res = miotDevice.setProperty(did, sp.siid, sp.piid, tmp_mode_);
-                                   if (res.empty())
+                                   int8_t error;
+                                   miotDevice.parseJsonHasError(res, &error);
+                                   if (error == -1)
                                    {
                                        return;
                                    }
                                    uint8_t code;
-                                   miotDevice.parseJsonGetCode(res, 0, &code);
+                                   miotDevice.parseCallGetCode(res, &code);
                                    if (code == 0)
                                    {
-                                       mode_ = tmp_mode_;
-                                   }
-                                   //
+                                       spec->second.value = mode_;
+                                   } //
                                });
-            // methods_.AddMethod("SetOffDelayTime", "定时关闭", ParameterList({Parameter("minutes", "0-480分钟", kValueTypeNumber, true)}), [this](const ParameterList &parameters)
-            //                    {
-            //                        auto tmp_minutes = static_cast<int8_t>(parameters["minutes"].number());
-            //                        auto spec = miotSpec.find("fan:off-delay-time");
-            //                        std::string did = spec->first;
-            //                        SIID_PIID sp = spec->second;
-            //                        auto res = miotDevice.setProperty(did, sp.siid, sp.piid, tmp_minutes);
-            //                        if (res.empty())
-            //                        {
-            //                            return;
-            //                        }
-            //                        uint8_t code;
-            //                        miotDevice.parseJsonGetCode(res, 0, &code);
-            //                        if (code == 0)
-            //                        {
-            //                            minutes = tmp_minutes;
-            //                        }
-            //                        //
-            //                    });
+
+            methods_.AddMethod("cancelCook", "取消烹煮", ParameterList(), [this](const ParameterList &parameters)
+                               {
+                                   auto spec = miotSpec.find("cooker:cancel-cooking");
+                                   std::string did = spec->first;
+                                   SIID_PIID sp = spec->second;
+                                   auto res = miotDevice.callAction(sp.siid, sp.piid);
+                                   ESP_LOGI(TAG, "cooker:start-cook response:%s", res.c_str());
+                                   //    auto res = miotDevice.setProperty(did, sp.siid, sp.piid, 1);
+                                   if (res.empty())
+                                   {
+                                       return;
+                                   }
+                                   int8_t error;
+                                   miotDevice.parseJsonHasError(res, &error);
+                                   if (error == -1)
+                                   {
+                                       return;
+                                   }
+                                   uint8_t code;
+                                   miotDevice.parseCallGetCode(res, &code);
+                                   if (code == 0)
+                                   {
+                                       spec->second.value = 0;
+                                   } //
+                               });
         }
     };
 
 } // namespace iot
 
-DECLARE_THING(ZHIMI_AIRP_RMA3);
+DECLARE_THING(CHUNMI_COOKER_EH3);
