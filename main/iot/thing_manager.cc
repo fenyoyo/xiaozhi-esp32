@@ -5,6 +5,7 @@
 #include <esp_log.h>
 #include <board.h>
 #include <settings.h>
+#include <wifi_station.h>
 
 #define TAG "ThingManager"
 
@@ -17,12 +18,22 @@ namespace iot
 
     void ThingManager::InitMoit()
     {
+
         // 请求网络，获取micloud的设备列表
         // 发送广播，查看在线设备
         // TODO:经常性获取失败，需要重试
+        auto &board = Board::GetInstance();
+        if (board.GetBoardType() != "wifi")
+        {
+            // 如果不是wifi模式，则不执行iot
+            return;
+        }
+        auto &wifiStation = WifiStation::GetInstance();
+        auto ssid = wifiStation.GetSsid();
         std::string mac = SystemInfo::GetMacAddress();
-        std::string url = "http://192.168.2.106:8000/api/v1/devices/" + mac + "/miot";
-        auto http = Board::GetInstance().CreateHttp();
+        std::string url = "http://192.168.2.106:8000/api/v1/devices/" + mac + "/miot?wifi_ssid=" + ssid;
+        auto http = board.CreateHttp();
+
         std::string method = "GET";
         std::string devicesJsonStr;
         Settings settings("micloud", true);
@@ -65,7 +76,19 @@ namespace iot
             return;
         }
 
+        cJSON *code = cJSON_GetObjectItem(root, "code");
+        if (code->valueint != 0)
+        {
+            ESP_LOGE(TAG, "Failed to get devices from micloud");
+            return;
+        }
         cJSON *data = cJSON_GetObjectItem(root, "data");
+        cJSON *open_iot = cJSON_GetObjectItem(data, "open_iot");
+        if (cJSON_IsFalse(open_iot))
+        {
+            ESP_LOGE(TAG, "open_miot is false");
+            return;
+        }
         cJSON *list = cJSON_GetObjectItem(data, "list");
         int size = cJSON_GetArraySize(list);
         for (int i = 0; i < size; i++)
@@ -93,7 +116,6 @@ namespace iot
             // thing->set_token(token->valuestring);
             AddThing(thing);
         }
-
 
         // AddThing(iot::CreateThing("Fan"));
         // for (auto &thing : things_)
