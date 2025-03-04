@@ -4,6 +4,7 @@
 
 #include <esp_log.h>
 #include <board.h>
+#include <settings.h>
 
 #define TAG "ThingManager"
 
@@ -20,28 +21,42 @@ namespace iot
         // 发送广播，查看在线设备
         // TODO:经常性获取失败，需要重试
         std::string mac = SystemInfo::GetMacAddress();
-        std::string url = "http://192.168.2.104:8000/api/v1/device/" + mac;
+        std::string url = "http://192.168.2.106:8000/api/v1/devices/" + mac + "/miot";
         auto http = Board::GetInstance().CreateHttp();
         std::string method = "GET";
+        std::string devicesJsonStr;
+        Settings settings("micloud", true);
         if (!http->Open(method, url, ""))
         {
             ESP_LOGE(TAG, "Failed to open HTTP connection");
             delete http;
-            return;
+            devicesJsonStr = settings.GetString("devices");
+            if (devicesJsonStr.empty())
+            {
+                ESP_LOGE(TAG, "Failed to get devices from micloud");
+                return;
+            }
         }
-        auto response = http->GetBody();
-        ESP_LOGI(TAG, "response:%s", response.c_str());
-
-        if (response.empty())
+        else
         {
-            ESP_LOGE(TAG, "Failed to get response from server 2");
+            auto response = http->GetBody();
+            if (response.empty())
+            {
+                ESP_LOGE(TAG, "Failed to get response from server 2");
+                http->Close();
+                delete http;
+                return;
+            }
+            settings.SetString("devices", response);
+            devicesJsonStr = response;
             http->Close();
             delete http;
-            return;
         }
+
+        ESP_LOGI(TAG, "response:%s", devicesJsonStr.c_str());
         // 判断是否是json格式
 
-        cJSON *root = cJSON_Parse(response.data());
+        cJSON *root = cJSON_Parse(devicesJsonStr.data());
         if (root == nullptr)
         {
             ESP_LOGE(TAG, "Failed to parse json");
@@ -79,8 +94,6 @@ namespace iot
             AddThing(thing);
         }
 
-        http->Close();
-        delete http;
 
         // AddThing(iot::CreateThing("Fan"));
         // for (auto &thing : things_)

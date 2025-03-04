@@ -28,11 +28,6 @@ namespace iot
         std::string jsonStr = "[";
         for (auto it = properties.begin(); it != properties.end(); ++it)
         {
-            if (it->second.isAction)
-            {
-                continue;
-            }
-
             jsonStr += "{\"did\": \"" + it->first + "\",";
             jsonStr += "\"siid\": " + std::to_string(it->second.siid) + ",";
             jsonStr += "\"piid\": " + std::to_string(it->second.piid);
@@ -41,7 +36,6 @@ namespace iot
         jsonStr.pop_back();
         jsonStr += "]";
         auto response = send("get_properties", jsonStr);
-        ESP_LOGI(TAG, "getProperties response:%s", response.c_str());
         std::map<std::string, int> result;
 
         cJSON *root = cJSON_Parse(response.data());
@@ -56,7 +50,6 @@ namespace iot
         {
 
             cJSON *item = cJSON_GetArrayItem(result_, i);
-            ESP_LOGI(TAG, "getProperties result:%s", cJSON_PrintUnformatted(item));
             cJSON *code = cJSON_GetObjectItem(item, "code");
             if (code->valueint != 0)
             {
@@ -167,21 +160,21 @@ namespace iot
         // 发送构建好的JSON请求字符串到设备，并返回设备的响应结果
         return send("set_properties", jsonStr);
     }
-    std::string MiotDevice::callAction(const uint8_t &siid, const uint8_t &piid)
+    std::string MiotDevice::callAction(const uint8_t &siid, const uint8_t &aiid)
     {
-        std::string jsonStr = "{\"did\": \"call-" + std::to_string(siid) + "-" + std::to_string(piid) + "\",";
+        std::string jsonStr = "{\"did\": \"call-" + std::to_string(siid) + "-" + std::to_string(aiid) + "\",";
         jsonStr += "\"siid\": " + std::to_string(siid) + ",";
-        jsonStr += "\"aiid\": " + std::to_string(piid) + ",";
+        jsonStr += "\"aiid\": " + std::to_string(aiid) + ",";
         jsonStr += "\"in\": []";
         jsonStr += "}";
         return send("action", jsonStr);
     }
     //{"id": 2, "method": "action", "params": {"did": "call-2-1", "siid": 2, "aiid": 1, "in": [{"piid": 5, "value": 1}]}}
-    std::string MiotDevice::callAction(const uint8_t &siid, const uint8_t &piid, const uint8_t &value)
+    std::string MiotDevice::callAction(const uint8_t &siid, const uint8_t &aiid, const uint8_t &piid, const uint8_t &value)
     {
         std::string jsonStr = "{\"did\": \"call-" + std::to_string(siid) + "-" + std::to_string(piid) + "\",";
         jsonStr += "\"siid\": " + std::to_string(siid) + ",";
-        jsonStr += "\"aiid\": " + std::to_string(piid) + ",";
+        jsonStr += "\"aiid\": " + std::to_string(aiid) + ",";
         jsonStr += "\"in\": [{\"piid\": " + std::to_string(piid) + ", \"value\": " + std::to_string(value) + "}]";
         jsonStr += "}";
         return send("action", jsonStr);

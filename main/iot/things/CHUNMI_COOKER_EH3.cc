@@ -31,14 +31,15 @@ namespace iot
         // fault 滤芯
         // mode 模式 0自动 1睡眠 2喜爱
         std::map<std::string, SIID_PIID> miotSpec = {
-            {"cooker:status", {2, 1, MOIT_PROPERTY, MOIT_PROPERTY_INT, 0, "状态:1=闲置,2=工作中,3=任务工作中,4=保暖,5=错误,6=更新中,7=烹煮完成"}},
-            {"cooker:cook-mode", {2, 5, MOIT_PROPERTY, MOIT_PROPERTY_INT, 0, "模式:1=精细煮,2=快速煮,3=煮粥,4=保暖,5=定制"}},
-            {"cooker:start-cook", {2, 1, MOIT_PROPERTY, MOIT_PROPERTY_INT, 0, "开始煮"}},
-            {"cooker:cancel-cooking", {3, 7, MOIT_PROPERTY, MOIT_PROPERTY_INT, 0, "取消"}},
+            {"cooker:status", {2, 1, MOIT_PROPERTY_INT, 0, "工作状态:1=闲置,2=工作中,3=任务工作中,4=保暖,5=错误,6=更新中,7=烹煮完成"}},
+            {"cooker:cook-mode", {2, 5, MOIT_PROPERTY_INT, 0, "模式:1=精细煮,2=快速煮,3=煮粥,4=保暖,5=定制"}},
         };
 
-        //TODO 把属性和方法分离出来
-        
+        std::map<std::string, SIID_AIID> miotAction = {
+            {"cooker:start-cook", {2, 1, 5, MOIT_PROPERTY_INT, 0, "开始煮"}},
+            {"cooker:cancel-cooking", {2, 2, 0, MOIT_PROPERTY_INT, 0, "取消"}},
+        };
+        // TODO 把属性和方法分离出来
 
     public:
         void initMiot(const std::string &ip, const std::string &token, const std::string &name) override
@@ -86,55 +87,16 @@ namespace iot
                     break;
                 }
             }
-            //   auto spec = miotSpec.find("air-purifier:relative-humidity");
-            //   std::string name = spec->first;
-            //   SIID_PIID sp = spec->second;
-            //   int value;
-            //   auto err = miotDevice.getPropertyIntValue(name, sp.siid, sp.piid, &value);
-            //   if (err != 0)
-            //   {
-            //       return humidity_;
-            //   }
-            //   // ESP_LOGI(TAG, "humidity response:%d", value);
-            //   humidity_ = value;
 
-            // properties_.AddBooleanProperty("power", "空气净化器是否打开", [this]() -> bool
-            //                                {
-            //                                 return miotSpec.find("air-purifier:on")->second.value;
-            //                                 return power_; });
-            // properties_.AddNumberProperty("humidity", "空气湿度", [this]() -> int
-            //                               {
-            //                                   return miotSpec.find("air-purifier:relative-humidity")->second.value;
-            //                                   return humidity_; //
-            //                               });
-            // properties_.AddNumberProperty("pm25", "pm2.5污染", [this]() -> int
-            //                               {
-            //                                   return miotSpec.find("air-purifier:pm2.5-density")->second.value;
-            //                                   return pm25_;
-            //                                   //
-            //                               });
-            // properties_.AddStringProperty("temperature", "温度", [this]() -> std::string
-            //                               {
-            //                                   return std::to_string(miotSpec.find("air-purifier:temperature")->second.value);
-            //                                   return std::to_string(temperature_);
-            //                                   //
-            //                               });
-            // properties_.AddNumberProperty("air-quality", "空气质量:0=优秀,1=良好,2=中等,3=差,4=严重污染,5=危险", [this]() -> int
-            //                               {
-            //                                   return miotSpec.find("air-purifier:air-quality")->second.value;
-            //                                   return air_quality_;
-            //                                   //
-            //                               });
-
-            methods_.AddMethod("startCook", "开始煮:1=精细煮,2=快速煮,3=煮粥,4=保暖,5=定制", ParameterList({Parameter("mode", "直吹模式=0,睡眠模式=1", kValueTypeNumber, true)}), [this](const ParameterList &parameters)
+            methods_.AddMethod("startCook", "设置烹煮模式,并开始煮", ParameterList({Parameter("mode", "1=快速煮,2=精细煮,3=煮粥,4=保暖,5=定制", kValueTypeNumber, true)}), [this](const ParameterList &parameters)
                                {
                                    //    power_ = true;
                                    auto mode_ = static_cast<int8_t>(parameters["mode"].number());
-                                   auto spec = miotSpec.find("cooker:start-cook");
+                                   auto spec = miotAction.find("cooker:start-cook");
                                    std::string did = spec->first;
-                                   SIID_PIID sp = spec->second;
-                                   auto res = miotDevice.callAction(sp.siid, sp.piid, mode_);
-                                   ESP_LOGI(TAG, "power response:%s", res.c_str());
+                                   SIID_AIID sp = spec->second;
+                                   auto res = miotDevice.callAction(sp.siid, sp.aiid, sp.piid, mode_);
+                                   ESP_LOGI(TAG, "startCook response:%s", res.c_str());
                                    //    auto res = miotDevice.setProperty(did, sp.siid, sp.piid, 1);
                                    if (res.empty())
                                    {
@@ -156,10 +118,10 @@ namespace iot
 
             methods_.AddMethod("cancelCook", "取消烹煮", ParameterList(), [this](const ParameterList &parameters)
                                {
-                                   auto spec = miotSpec.find("cooker:cancel-cooking");
+                                   auto spec = miotAction.find("cooker:cancel-cooking");
                                    std::string did = spec->first;
-                                   SIID_PIID sp = spec->second;
-                                   auto res = miotDevice.callAction(sp.siid, sp.piid);
+                                   SIID_AIID sp = spec->second;
+                                   auto res = miotDevice.callAction(sp.siid, sp.aiid);
                                    ESP_LOGI(TAG, "cooker:start-cook response:%s", res.c_str());
                                    //    auto res = miotDevice.setProperty(did, sp.siid, sp.piid, 1);
                                    if (res.empty())

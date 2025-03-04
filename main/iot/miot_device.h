@@ -21,11 +21,22 @@ namespace iot
 
         int8_t siid;
         int8_t piid;
-        bool isAction = false;
         int8_t type = 0;
         int value = 0;
         std::string description = "";
     };
+
+    struct SIID_AIID
+    {
+
+        int8_t siid;
+        int8_t aiid;
+        int8_t piid;
+        int8_t type = 0;
+        int value = 0;
+        std::string description = "";
+    };
+    
 
     class MiotDevice
     {
@@ -46,9 +57,10 @@ namespace iot
                                 const uint8_t &value, const bool &isBool = false);
         /**
          * 调用action
+         * {"id":2,"result":{"code":0,"out":[]},"exe_time":30
          */
-        std::string callAction(const uint8_t &siid, const uint8_t &piid);
-        std::string callAction(const uint8_t &siid, const uint8_t &piid,const uint8_t &value);
+        std::string callAction(const uint8_t &siid, const uint8_t &aiid);
+        std::string callAction(const uint8_t &siid, const uint8_t &aiid, const uint8_t &piid, const uint8_t &value);
 
         std::string send(const std::string &command, const std::string &parameters);
         /**

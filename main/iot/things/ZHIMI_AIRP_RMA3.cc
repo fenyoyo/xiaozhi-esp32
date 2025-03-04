@@ -31,12 +31,12 @@ namespace iot
         // fault 滤芯
         // mode 模式 0自动 1睡眠 2喜爱
         std::map<std::string, SIID_PIID> miotSpec = {
-            {"air-purifier:on", {2, 1, MOIT_PROPERTY, MOIT_PROPERTY_BOOL, 0, "开关"}},
-            {"air-purifier:mode", {2, 4, MOIT_PROPERTY, MOIT_PROPERTY_INT, 0, "模式"}},
-            {"air-purifier:relative-humidity", {3, 1, MOIT_PROPERTY, MOIT_PROPERTY_INT, 0, "空气湿度"}},
-            {"air-purifier:pm2.5-density", {3, 4, MOIT_PROPERTY, MOIT_PROPERTY_INT, 0, "pm2.5"}},
-            {"air-purifier:temperature", {3, 7, MOIT_PROPERTY, MOIT_PROPERTY_INT, 0, "温度"}},
-            {"air-purifier:air-quality", {3, 8, MOIT_PROPERTY, MOIT_PROPERTY_INT, 0, "空气质量"}},
+            {"air-purifier:on", {2, 1, MOIT_PROPERTY_BOOL, 0, "开关"}},
+            {"air-purifier:mode", {2, 4, MOIT_PROPERTY_INT, 0, "模式"}},
+            {"air-purifier:relative-humidity", {3, 1, MOIT_PROPERTY_INT, 0, "空气湿度"}},
+            {"air-purifier:pm2.5-density", {3, 4, MOIT_PROPERTY_INT, 0, "pm2.5"}},
+            {"air-purifier:temperature", {3, 7, MOIT_PROPERTY_INT, 0, "温度"}},
+            {"air-purifier:air-quality", {3, 8, MOIT_PROPERTY_INT, 0, "空气质量"}},
         };
 
     public:
