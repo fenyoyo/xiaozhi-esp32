@@ -36,7 +36,6 @@ namespace iot
         int value = 0;
         std::string description = "";
     };
-    
 
     class MiotDevice
     {
@@ -55,6 +54,7 @@ namespace iot
 
         std::string setProperty(const std::string &did, const uint8_t &siid, const uint8_t &piid,
                                 const uint8_t &value, const bool &isBool = false);
+        void setProperty(std::map<std::string, SIID_PIID> miotSpec, std::string key, const uint8_t &value, const bool &isBool = false);
         /**
          * 调用action
          * {"id":2,"result":{"code":0,"out":[]},"exe_time":30

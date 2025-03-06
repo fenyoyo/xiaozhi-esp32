@@ -31,7 +31,7 @@ namespace iot
         auto &wifiStation = WifiStation::GetInstance();
         auto ssid = wifiStation.GetSsid();
         std::string mac = SystemInfo::GetMacAddress();
-        std::string url = "http://192.168.2.106:8000/api/v1/devices/" + mac + "/miot?wifi_ssid=" + ssid;
+        std::string url = "http://192.168.2.104:8000/api/v1/devices/" + mac + "/miot?wifi_ssid=" + ssid;
         auto http = board.CreateHttp();
 
         std::string method = "GET";

@@ -160,6 +160,19 @@ namespace iot
         // 发送构建好的JSON请求字符串到设备，并返回设备的响应结果
         return send("set_properties", jsonStr);
     }
+    void MiotDevice::setProperty(std::map<std::string, SIID_PIID> miotSpec, std::string key, const uint8_t &value, const bool &isBool)
+    {
+        auto spec = miotSpec.find(key);
+        if (spec == miotSpec.end())
+        {
+            ESP_LOGE(TAG, "%s not found", key.data());
+            return;
+        }
+        std::string did = spec->first;
+        SIID_PIID sp = spec->second;
+        auto res = setProperty(did, sp.siid, sp.piid, value, isBool);
+        return;
+    }
     std::string MiotDevice::callAction(const uint8_t &siid, const uint8_t &aiid)
     {
         std::string jsonStr = "{\"did\": \"call-" + std::to_string(siid) + "-" + std::to_string(aiid) + "\",";
@@ -199,7 +212,7 @@ namespace iot
         cJSON *error = cJSON_GetObjectItem(root, "error");
         if (error != NULL)
         {
-            cJSON *code = cJSON_GetObjectItem(error, "code");
+            // cJSON *code = cJSON_GetObjectItem(error, "code");
             cJSON *message = cJSON_GetObjectItem(error, "message");
             ESP_LOGE(TAG, "error:%s", message->valuestring);
             *value_ = -1;

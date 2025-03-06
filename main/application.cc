@@ -445,8 +445,9 @@ void Application::Start() {
             }
         } else if (strcmp(type->valuestring, "iot") == 0) {
             auto commands = cJSON_GetObjectItem(root, "commands");
+            
             if (commands != NULL) {
-                auto& thing_manager = iot::ThingManager::GetInstance();
+                                auto& thing_manager = iot::ThingManager::GetInstance();
                 for (int i = 0; i < cJSON_GetArraySize(commands); ++i) {
                     auto command = cJSON_GetArrayItem(commands, i);
                     thing_manager.Invoke(command);

@@ -6,42 +6,38 @@
 #include "iot/miot_device.h"
 #include "board.h"
 
-#define TAG "ZHIMI_AIRP_RMA3"
+#define TAG "ZHIMI_AIRP_UA1A"
 
 namespace iot
 {
-    // 米家空气净化器 4 Lite
-    // https://home.miot-spec.com/spec/zhimi.airp.rma3
-    class ZHIMI_AIRP_RMA3 : public Thing
+    // 米家全效空气净化器 Ultra
+    // https://home.miot-spec.com/spec/zhimi.airp.ua1a
+    class ZHIMI_AIRP_UA1A : public Thing
     {
     private:
-        bool id_ = 2;
-        bool power_ = false;
-        bool mode_ = 0;
-        uint8_t fault = 100;
-        uint8_t humidity_ = 0;
-        uint16_t pm25_ = 0;
-        double temperature_ = 0;
-        uint8_t air_quality_ = 0;
-
         std::string ip_;
         std::string token_;
-        uint32_t deviceID = 0;
-        uint32_t deviceStamp = 0;
         MiotDevice miotDevice;
         // fault 滤芯
         // mode 模式 0自动 1睡眠 2喜爱
         std::map<std::string, SIID_PIID> miotSpec = {
             {"air-purifier:on", {2, 1, MOIT_PROPERTY_BOOL, 0, "开关"}},
-            {"air-purifier:mode", {2, 4, MOIT_PROPERTY_INT, 0, "模式"}},
+            {"air-purifier:mode", {2, 4, MOIT_PROPERTY_INT, 0, "模式: 0=自动 1=睡眠 2=喜爱 3=手动"}},
+            {"air-purifier:fan-level", {2, 5, MOIT_PROPERTY_INT, 0, "模式: 1-3档"}},
+            {"air-purifier:plasma", {2, 6, MOIT_PROPERTY_BOOL, 0, "开启等离子气体"}},
+            {"air-purifier:uv", {2, 7, MOIT_PROPERTY_BOOL, 0, "开启紫外线杀毒"}},
             {"environment:relative-humidity", {3, 1, MOIT_PROPERTY_INT, 0, "空气湿度"}},
+            {"environment:temperature", {3, 2, MOIT_PROPERTY_INT, 0, "温度"}},
+            {"environment:air-quality", {3, 3, MOIT_PROPERTY_INT, 0, "空气质量"}},
             {"environment:pm2.5-density", {3, 4, MOIT_PROPERTY_INT, 0, "pm2.5"}},
-            {"environment:temperature", {3, 7, MOIT_PROPERTY_INT, 0, "温度"}},
-            {"environment:air-quality", {3, 8, MOIT_PROPERTY_INT, 0, "空气质量"}},
+            {"environment:pm10-density", {3, 5, MOIT_PROPERTY_INT, 0, "pm10"}},
+            {"environment:hcho-density", {3, 6, MOIT_PROPERTY_INT, 0, "甲醛"}},
+            {"environment:pm2.5", {3, 7, MOIT_PROPERTY_INT, 0, "pm2.5"}},
+
             {"alarm:alarm", {6, 1, MOIT_PROPERTY_BOOL, 0, "提示音"}},
             {"screen:brightness", {7, 2, MOIT_PROPERTY_INT, 0, "屏幕亮度"}},
             {"physical-controls-locked:physical-controls-locked", {8, 1, MOIT_PROPERTY_BOOL, 0, "儿童锁"}},
-            {"air-purifier-favorite:fan-level", {11, 1, MOIT_PROPERTY_INT, 0, "最爱模式风力"}},
+            {"air-purifier-favorite:fan-level", {1, 1, MOIT_PROPERTY_INT, 0, "最爱模式风力"}},
         };
 
     public:
@@ -53,7 +49,7 @@ namespace iot
             miotDevice = MiotDevice(ip_, token_);
         }
 
-        ZHIMI_AIRP_RMA3() : Thing("ZHIMI_AIRP_RMA3", "空气净化器"), power_(false)
+        ZHIMI_AIRP_UA1A() : Thing("ZHIMI_AIRP_UA1A", "空气净化器")
         {
 
             properties_.AddBooleanProperty("properties", "获取设备所有状态", [this]() -> bool
@@ -96,40 +92,26 @@ namespace iot
             methods_.AddMethod("TurnOff", "关闭空气净化器", ParameterList(), [this](const ParameterList &parameters)
                                { miotDevice.setProperty(miotSpec, "air-purifier:on", MOIT_OFF, true); });
 
-            // methods_.AddMethod("Toggle", "切换开关状态", ParameterList(), [this](const ParameterList &parameters)
-            //                    {
-            //                        //    power_ = true;
-            //                        auto spec = miotSpec.find("air-purifier:toggle");
-            //                        std::string did = spec->first;
-            //                        SIID_PIID sp = spec->second;
-            //                        auto res = miotDevice.callAction(sp.siid, sp.piid);
-            //                        ESP_LOGI(TAG, "power response:%s", res.c_str());
-            //                        //    auto res = miotDevice.setProperty(did, sp.siid, sp.piid, 1);
-            //                        if (res.empty())
-            //                        {
-            //                            return;
-            //                        }
-            //                        int8_t error;
-            //                        miotDevice.parseJsonHasError(res, &error);
-            //                        if (error == -1)
-            //                        {
-            //                            return;
-            //                        }
-            //                        uint8_t code;
-            //                        miotDevice.parseCallGetCode(res, &code);
-            //                        if (code == 0)
-            //                        {
-            //                            power_ = !power_;
-            //                        } //
-            //                    });
-
-            methods_.AddMethod("SetMode", "切换电风扇吹风模式", ParameterList({Parameter("mode", "自动模式=0,睡眠模式=1,最爱模式=2", kValueTypeNumber, true)}), [this](const ParameterList &parameters)
+            methods_.AddMethod("SetMode", "切换电风扇吹风模式", ParameterList({Parameter("mode", "模式: 0=自动 1=睡眠 2=喜爱 3=手动", kValueTypeNumber, true)}), [this](const ParameterList &parameters)
                                {
                                    std::string key = "air-purifier:mode";
                                    auto value = static_cast<int8_t>(parameters["mode"].number());
                                    miotDevice.setProperty(miotSpec, key, value); //
                                });
-
+            methods_.AddMethod("SetPlasma", "等离子", ParameterList({Parameter("value", "关闭或开启", kValueTypeBoolean, true)}), [this](const ParameterList &parameters)
+                               {
+                                   std::string key = "air-purifier:plasma";
+                                   auto value = static_cast<int8_t>(parameters["value"].boolean());
+                                   miotDevice.setProperty(miotSpec, key, value, true);
+                                   //
+                               });
+            methods_.AddMethod("SetUv", "紫外线杀菌", ParameterList({Parameter("value", "关闭或开启", kValueTypeBoolean, true)}), [this](const ParameterList &parameters)
+                               {
+                                   std::string key = "air-purifier:uv";
+                                   auto value = static_cast<int8_t>(parameters["value"].boolean());
+                                   miotDevice.setProperty(miotSpec, key, value, true);
+                                   //
+                               });
             methods_.AddMethod("SetAlarm", "设置提示音", ParameterList({Parameter("alarm", "关闭或开启提示音", kValueTypeBoolean, true)}), [this](const ParameterList &parameters)
                                {
                                    auto value = static_cast<int8_t>(parameters["alarm"].boolean());
@@ -153,4 +135,4 @@ namespace iot
 
 } // namespace iot
 
-DECLARE_THING(ZHIMI_AIRP_RMA3);
+DECLARE_THING(ZHIMI_AIRP_UA1A);
