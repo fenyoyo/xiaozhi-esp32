@@ -3,68 +3,57 @@
 #include <esp_log.h>
 #include "iot/miot_device.h"
 
-#define TAG "ZHIMI_AIRP_RMA2"
+#define TAG "DMAKER_FAN_P9"
 
 namespace iot
 {
-    // 米家空气净化器 4 Lite
-    // https://home.miot-spec.com/spec/zhimi.airp.rma3
-    class ZHIMI_AIRP_RMA2 : public Thing
+    // 这里仅定义 Lamp 的属性和方法，不包含具体的实现
+    class DMAKER_FAN_P9 : public Thing
     {
     private:
         std::string ip_;
         std::string token_;
         MiotDevice miotDevice;
-
         std::map<std::string, SpecProperty> miotSpec = {
             {
-                "air-purifier:on",
+                "fan:on",
                 {2, 1, "开关", "", kValueTypeBoolean, Permission::READ | Permission::WRITE, "setOn", "设备开关"},
             },
             {
-                "air-purifier:mode",
-                {2, 4, "模式:0=自动模式 1=睡眠模式 2=最爱模式", "", kValueTypeNumber, Permission::READ | Permission::WRITE, "setMode", "设置模式", "自动模式 1=睡眠模式 2=最爱模式"},
+                "fan:fan-leve",
+                {2, 2, "风力:1-4档", "", kValueTypeNumber, Permission::READ | Permission::WRITE, "setFanLevel", "设置风力", "1-4档"},
             },
             {
-                "environment:relative-humidity",
-                {3, 1, "空气湿度", "", kValueTypeNumber, Permission::READ},
+                "fan:horizontal-swing",
+                {2, 5, "是否开启扫风", "", kValueTypeBoolean, Permission::READ | Permission::WRITE, "setHorizontal", "设置是否开启扫风"},
             },
             {
-                "environment:pm2.5-density",
-                {3, 4, "pm2.5", "", kValueTypeNumber, Permission::READ},
+                "fan:mode",
+                {2, 4, "风扇模式:0=直吹模式,1=睡眠模式", "", kValueTypeNumber, Permission::READ | Permission::WRITE, "setMode", "设置风扇模式", "0=直吹模式,1=睡眠模式"},
             },
             {
-                "environment:temperature",
-                {3, 7, "温度", "", kValueTypeNumber, Permission::READ},
+                "fan:alarm",
+                {2, 7, "提示音是否打开", "", kValueTypeBoolean, Permission::READ | Permission::WRITE, "setAlarm", "设置提示音是否打开"},
             },
             {
-                "environment:air-quality",
-                {3, 8, "空气质量:0=优秀 1=良好 2=中等 3=差 4=严重污染 5=危险", "", kValueTypeNumber, Permission::READ},
+                "fan:off-delay-time",
+                {2, 8, "定时关闭时间", "", kValueTypeNumber, Permission::READ | Permission::WRITE, "setOffDelayTime", "设置定时关闭时间", "0~480分钟"},
             },
             {
-                "alarm:alarm",
-                {6, 1, "提示音是否打开", "", kValueTypeBoolean, Permission::READ | Permission::WRITE, "setBrightness", "设置指示灯是否开启"},
-            },
-            {
-                "screen:brightness",
-                {7, 2, "屏幕亮度:0=息屏 1=微亮 2=正常", "", kValueTypeNumber, Permission::READ | Permission::WRITE, "setBrightness", "设置屏幕亮度", "0=息屏 1=微亮 2=正常"},
+                "fan:brightness",
+                {2, 9, "指示灯是否开启", "", kValueTypeBoolean, Permission::READ | Permission::WRITE, "setBrightness", "设置指示灯是否开启"},
             },
             {
                 "physical-controls-locked:physical-controls-locked",
-                {8, 1, "儿童锁", "", kValueTypeBoolean, Permission::READ | Permission::WRITE, "setPhysicalControlsLocked", "设置儿童锁"},
-            },
-            {
-                "air-purifier-favorite:fan-level",
-                {11, 1, "风力:1-14档", "", kValueTypeNumber, Permission::READ | Permission::WRITE, "setFanLevel", "设置风力", "1-14档"},
+                {3, 1, "儿童锁", "", kValueTypeBoolean, Permission::READ | Permission::WRITE, "setPhysicalControlsLocked", "设置儿童锁"},
             },
         };
 
     public:
-        ZHIMI_AIRP_RMA2() : Thing("空气净化器", "")
+        DMAKER_FAN_P9() : Thing("米家直流变频塔扇", "")
         {
             Register();
         }
-
         void initMiot(const std::string &ip, const std::string &token, const std::string &name) override
         {
             ip_ = ip;
@@ -137,4 +126,4 @@ namespace iot
 
 } // namespace iot
 
-DECLARE_THING(ZHIMI_AIRP_RMA2);
+DECLARE_THING(DMAKER_FAN_P9);

@@ -1,16 +1,13 @@
 #include "iot/thing.h"
 #include "iot/miot.h"
 #include <esp_log.h>
-#include "iot/protocol.h"
-#include "application.h"
 #include "iot/miot_device.h"
-#include "board.h"
 
 #define TAG "YEELINK_LIGHT_MONO6"
 
 namespace iot
 {
-    // Mi Smart LED Bulb
+    // 小米智能LED灯
     // https://home.miot-spec.com/spec/yeelink.light.mono6
     class YEELINK_LIGHT_MONO6 : public Thing
     {
@@ -18,105 +15,101 @@ namespace iot
         std::string ip_;
         std::string token_;
         MiotDevice miotDevice;
-        // fault 滤芯
-        // mode 模式 0自动 1睡眠 2喜爱
-        std::map<std::string, SIID_PIID> miotSpec = {
-            {"light:on", {2, 1, MOIT_PROPERTY_INT, 0, "是否开启:0=关闭,1=开启"}},
-            {"light:brightness", {2, 3, MOIT_PROPERTY_INT, 0, "亮度百分比:1-100%"}},
-            {"light:off-delay-time", {2, 7, MOIT_PROPERTY_INT, 0, "多少分钟后关闭"}},
-        };
 
-        std::map<std::string, SIID_AIID> miotAction = {
-            {"light:toggle", {2, 1, 0, MOIT_PROPERTY_INT, 0, "切换开关"}},
-            {"light:brightness-down", {2, 2, 0, MOIT_PROPERTY_INT, 0, "调低亮度"}},
-            {"light:brightness-up", {2, 3, 0, MOIT_PROPERTY_INT, 0, "调高亮度"}},
+        // std::map<std::string, SIID_PIID> miotSpec = {
+        //     {"light:on", {2, 1, MOIT_PROPERTY_INT, 0, "是否开启:0=关闭,1=开启"}},
+        //     {"light:brightness", {2, 3, MOIT_PROPERTY_INT, 0, "亮度百分比:1-100%"}},
+        //     {"light:off-delay-time", {2, 7, MOIT_PROPERTY_INT, 0, "多少分钟后关闭"}},
+        // };
+
+        std::map<std::string, SpecProperty> miotSpec = {
+            {
+                "light:on",
+                {2, 1, "开关", "", kValueTypeBoolean, Permission::READ | Permission::WRITE, "setOn", "设备开关"},
+            },
+            {
+                "light:brightness",
+                {2, 2, "亮度:1-100", "", kValueTypeNumber, Permission::READ | Permission::WRITE, "setBrightness", "设置亮度", "1-100"},
+            },
+            {
+                "light:off-delay-time",
+                {2, 7, "定时关闭", "", kValueTypeNumber, Permission::READ | Permission::WRITE, "setOffDelayTime", "设置定时关闭时间", "0-120分钟"},
+            },
         };
 
     public:
+        YEELINK_LIGHT_MONO6() : Thing("小米智能LED灯", "")
+        {
+            Register();
+        }
+
         void initMiot(const std::string &ip, const std::string &token, const std::string &name) override
         {
             ip_ = ip;
             token_ = token;
-            set_name(name);
+            set_description(name);
             miotDevice = MiotDevice(ip_, token_);
         }
 
-        YEELINK_LIGHT_MONO6() : Thing("YEELINK_LIGHT_MONO6", "小米LED智能灯")
+        void getProperties() override
         {
-            properties_.AddBooleanProperty("properties", "获取设备所有状态", [this]() -> bool
-                                           {
-                                               auto spec = miotDevice.getProperties(miotSpec);
-                                               if (spec.empty())
-                                               {
-                                                   return false;
-                                               }
-                                               for (auto it = spec.begin(); it != spec.end(); ++it)
-                                               {
-                                                   auto property = miotSpec.find(it->first);
-                                                   property->second.value = it->second;
-                                               }
-                                               return true; //
-                                           });
-
+            auto spec = miotDevice.getProperties2(miotSpec);
+            if (spec.empty())
+            {
+                return;
+            }
+            for (auto it = spec.begin(); it != spec.end(); ++it)
+            {
+                auto property = miotSpec.find(it->first);
+                property->second.value = it->second;
+            }
+        }
+        void Register()
+        {
             for (auto it = miotSpec.begin(); it != miotSpec.end(); ++it)
             {
                 switch (it->second.type)
                 {
-                case MOIT_PROPERTY_BOOL:
+                case kValueTypeBoolean:
                     properties_.AddBooleanProperty(it->first, it->second.description, [this, it]() -> bool
                                                    { return miotSpec.find(it->first)->second.value; });
+
                     break;
-                case MOIT_PROPERTY_INT:
+                case kValueTypeNumber:
                     properties_.AddNumberProperty(it->first, it->second.description, [this, it]() -> int
                                                   { return miotSpec.find(it->first)->second.value; });
                     break;
-                case MOIT_PROPERTY_STRING:
+                case kValueTypeString:
                 default:
                     properties_.AddStringProperty(it->first, it->second.description, [this, it]() -> std::string
                                                   { return std::to_string(miotSpec.find(it->first)->second.value); });
                     break;
                 }
+
+                if ((static_cast<uint8_t>(it->second.perm) & static_cast<uint8_t>(Permission::WRITE)) != 0)
+                {
+                    methods_.AddMethod(it->second.method_name, it->second.method_description, ParameterList({Parameter("value", it->second.parameter_description, it->second.type, true)}), [this, it](const ParameterList &parameters)
+                                       {
+                                           if (it->second.type == kValueTypeBoolean)
+                                           {
+                                               auto value = static_cast<int8_t>(parameters["value"].boolean());
+                                               miotDevice.setProperty2(miotSpec, it->first, value, true); //
+                                           }
+                                           else if (it->second.type == kValueTypeNumber)
+                                           {
+                                               auto value = static_cast<int8_t>(parameters["value"].number());
+                                               miotDevice.setProperty2(miotSpec, it->first, value, false);
+                                           }
+                                           else
+                                           {
+                                               auto value = static_cast<int8_t>(parameters["value"].number());
+                                               miotDevice.setProperty2(miotSpec, it->first, value, false);
+
+                                           } //
+                                       } //
+                    );
+                }
             }
-
-            methods_.AddMethod("TurnOn", "开灯", ParameterList(), [this](const ParameterList &parameters)
-                               {
-                                   std::string key = "light:on";
-                                   auto value = static_cast<int8_t>(parameters["mode"].number());
-                                   miotDevice.setProperty(miotSpec, key, MOIT_ON, true); //
-                               });
-            methods_.AddMethod("TurnOff", "关灯", ParameterList(), [this](const ParameterList &parameters)
-                               {
-                                   //    power_ = true;
-                                   std::string key = "light:on";
-                                   auto value = static_cast<int8_t>(parameters["mode"].number());
-                                   miotDevice.setProperty(miotSpec, key, MOIT_OFF, true); //
-                               });
-
-            methods_.AddMethod("setBrightness", "设置亮度", ParameterList({Parameter("value", "1-100百分比", kValueTypeNumber, true)}), [this](const ParameterList &parameters)
-                               {
-                                   std::string key = "light:brightness";
-                                   auto value = static_cast<int8_t>(parameters["value"].number());
-                                   miotDevice.setProperty(miotSpec, "screen:brightness", value); //
-                               });
-
-            methods_.AddMethod("setOffDelayTime", "设置定制关闭", ParameterList({Parameter("value", "0-120分钟", kValueTypeNumber, true)}), [this](const ParameterList &parameters)
-                               {
-                                   std::string key = "light:off-delay-time";
-                                   auto value = static_cast<int8_t>(parameters["value"].number());
-                                   miotDevice.setProperty(miotSpec, key, value); //
-                               });
-
-            methods_.AddMethod("Toggle", "切换开关", ParameterList(), [this](const ParameterList &parameters)
-                               {
-                                   //    power_ = true;
-                                   auto action = miotAction.find("light:toggle");
-                                   std::string did = action->first;
-                                   SIID_AIID sp = action->second;
-                                   auto res = miotDevice.callAction(sp.siid, sp.piid);
-                                   if (res.empty())
-                                   {
-                                       return;
-                                   } });
         }
     };
 

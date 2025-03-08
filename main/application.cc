@@ -445,7 +445,7 @@ void Application::Start() {
             }
         } else if (strcmp(type->valuestring, "iot") == 0) {
             auto commands = cJSON_GetObjectItem(root, "commands");
-            
+            ESP_LOGI(TAG, "<< %s", cJSON_PrintUnformatted(root));
             if (commands != NULL) {
                                 auto& thing_manager = iot::ThingManager::GetInstance();
                 for (int i = 0; i < cJSON_GetArraySize(commands); ++i) {

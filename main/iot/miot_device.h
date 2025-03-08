@@ -4,6 +4,7 @@
 #include <map>
 #include <string>
 #include <cstdint>
+#include "iot/thing.h"
 #define MOIT_ON 1
 #define MOIT_OFF 0
 
@@ -16,25 +17,72 @@
 
 namespace iot
 {
-    struct SIID_PIID
-    {
+    // struct SIID_PIID
+    // {
 
-        int8_t siid;
-        int8_t piid;
-        int8_t type = 0;
-        int value = 0;
-        std::string description = "";
+    //     int8_t siid;
+    //     int8_t piid;
+    //     int8_t type = 0;
+    //     int value = 0;
+    //     std::string description = "";
+    // };
+
+    // struct SIID_AIID
+    // {
+
+    //     int8_t siid;
+    //     int8_t aiid;
+    //     int8_t piid;
+    //     int8_t type = 0;
+    //     int value = 0;
+    //     std::string description = "";
+    // };
+
+    enum class Permission : uint8_t
+    {
+        READ = 1 << 2,
+        WRITE = 1 << 1,
+        EXECUTE = 1 << 0
     };
 
-    struct SIID_AIID
+    inline Permission operator|(Permission lhs, Permission rhs)
     {
+        return static_cast<Permission>(static_cast<uint8_t>(lhs) | static_cast<uint8_t>(rhs));
+    }
 
-        int8_t siid;
-        int8_t aiid;
-        int8_t piid;
-        int8_t type = 0;
+    struct SpecProperty
+    {
+        uint8_t siid;
+        uint8_t piid;
+        // std::string key;
+        std::string description;
+        std::string unit;
+        // PropertyType type;
+        ValueType type;
+        Permission perm;
+        std::string method_name = "";
+        std::string method_description = "";
+        std::string parameter_description = "";
         int value = 0;
-        std::string description = "";
+    };
+
+    struct SpecActionParam
+    {
+        uint8_t piid;
+        std::string key = "";
+        std::string parameter_description = "";
+        ValueType type;
+        int value = 0;
+
+    };
+
+    struct SpecAction
+    {
+        uint8_t siid;
+        uint8_t aiid;
+        std::string method_name = "";
+        std::string method_description = "";
+        std::vector<SpecActionParam> parameters;
     };
 
     class MiotDevice
@@ -48,19 +96,22 @@ namespace iot
         MiotDevice(const std::string &ip, const std::string &token);
 
         std::string getProperty(const std::string &did, const uint8_t &siid, const uint8_t &piid);
-        std::map<std::string, int> getProperties(const std::map<std::string, SIID_PIID> &properties);
+        // std::map<std::string, int> getProperties(const std::map<std::string, SIID_PIID> &properties);
+        std::map<std::string, int> getProperties2(const std::map<std::string, SpecProperty> &properties);
         // int8_t getPropertyDoubleValue(const std::string &did, const uint8_t &siid, const uint8_t &piid, double *value);
         // int8_t getPropertyIntValue(const std::string &did, const uint8_t &siid, const uint8_t &piid, int *value);
 
         std::string setProperty(const std::string &did, const uint8_t &siid, const uint8_t &piid,
                                 const uint8_t &value, const bool &isBool = false);
-        void setProperty(std::map<std::string, SIID_PIID> miotSpec, std::string key, const uint8_t &value, const bool &isBool = false);
+        // void setProperty(std::map<std::string, SIID_PIID> miotSpec, std::string key, const uint8_t &value, const bool &isBool = false);
+        void setProperty2(std::map<std::string, SpecProperty> miotSpec, std::string key, const uint8_t &value, const bool &isBool = false);
         /**
          * 调用action
          * {"id":2,"result":{"code":0,"out":[]},"exe_time":30
          */
         std::string callAction(const uint8_t &siid, const uint8_t &aiid);
         std::string callAction(const uint8_t &siid, const uint8_t &aiid, const uint8_t &piid, const uint8_t &value);
+        std::string callAction2(std::map<std::string, SpecAction> miotSpec,std::string key,std::map<uint8_t,int> av);
 
         std::string send(const std::string &command, const std::string &parameters);
         /**

@@ -270,6 +270,8 @@ public:
     virtual std::string GetStateJson();
     virtual void Invoke(const cJSON* command);
     virtual void initMiot(const std::string& ip, const std::string& token,const std::string& name);
+    virtual void getProperties();
+
 
     const std::string& name() const { return name_; }
     void set_name(const std::string& name) { name_ = name; }
