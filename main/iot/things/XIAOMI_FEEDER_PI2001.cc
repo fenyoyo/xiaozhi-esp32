@@ -3,13 +3,13 @@
 #include <esp_log.h>
 #include "iot/miot_device.h"
 
-#define TAG "CHUNMI_COOKER_EH3"
+#define TAG "XIAOMI_FEEDER_PI2001"
 
 namespace iot
 {
-    // 米家智能小饭煲2
-    // https://home.miot-spec.com/spec/chunmi.cooker.eh3
-    class CHUNMI_COOKER_EH3 : public Thing
+    // 米家智能宠物喂食器2
+    // https://home.miot-spec.com/spec/xiaomi.feeder.pi2001
+    class XIAOMI_FEEDER_PI2001 : public Thing
     {
     private:
         std::string ip_;
@@ -17,27 +17,20 @@ namespace iot
         MiotDevice miotDevice;
 
         std::map<std::string, SpecProperty> miotSpec = {
-
             {
-                "cooker:status",
-                {2, 1, "工作状态:1=待机 2=工作中 3=任务工作中 4=保暖 5=错误 6=更新中 7=烹煮完成", "", kValueTypeNumber, Permission::READ},
+                "pet-feeder:target-feeding-measure",
+                {2, 7, "target-feeding-measure", "", kValueTypeNumber, Permission::READ | Permission::WRITE, "setTargetFeedingMeasure", "Target Feeding Measure"},
             },
         };
         std::map<std::string, SpecAction> miotSpecAction = {
-
             {
-                "cooker:start-cook",
-                {2, 1, "setCookMode", "设置电饭煲模式", {SpecActionParam(5, "value5", "1=精细煮,2=快速煮,3=煮粥,4=保暖", kValueTypeNumber)}},
-            },
-
-            {
-                "cooker:cancel-cooking",
-                {2, 2, "CancelCooking", "取消煮", {}},
+                "pet-feeder:pet-food-out",
+                {2, 1, "PetFoodOut", "Pet Food Out", {SpecActionParam(8, "value8", "参数描述", kValueTypeNumber)}},
             },
         };
 
     public:
-        CHUNMI_COOKER_EH3() : Thing("米家智能小饭煲2", "")
+        XIAOMI_FEEDER_PI2001() : Thing("米家智能宠物喂食器2", "")
         {
             Register();
         }
@@ -103,35 +96,14 @@ namespace iot
                                            {
                                                auto value = static_cast<int8_t>(parameters["value"].number());
                                                miotDevice.setProperty2(miotSpec, it->first, value, false);
-
                                            } //
                                        } //
                     );
                 }
             }
-
-            for (auto it = miotSpecAction.begin(); it != miotSpecAction.end(); ++it)
-            {
-                ParameterList parameterList;
-                for (auto &&i : it->second.parameters)
-                {
-                    parameterList.AddParameter(Parameter(i.key, i.parameter_description, i.type, true));
-                }
-                methods_.AddMethod(it->second.method_name, it->second.method_description, parameterList, [this, it](const ParameterList &parameters)
-                                   {
-                                       std::map<uint8_t, int> av;
-                                       // std::map<uint_8 piid,uint_8 value> value;
-                                       for (auto &&i : it->second.parameters)
-                                       {
-                                           auto value = static_cast<int8_t>(parameters[i.key].number());
-                                           av.insert({i.piid, value});
-                                       }
-                                       miotDevice.callAction2(miotSpecAction, it->first, av); //
-                                   });
-            };
         }
     };
 
 } // namespace iot
 
-DECLARE_THING(CHUNMI_COOKER_EH3);
+DECLARE_THING(XIAOMI_FEEDER_PI2001);

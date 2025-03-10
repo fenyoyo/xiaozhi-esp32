@@ -42,7 +42,8 @@ namespace iot
     {
         READ = 1 << 2,
         WRITE = 1 << 1,
-        EXECUTE = 1 << 0
+        EXECUTE = 1 << 0,
+        NONE = 0 << 0
     };
 
     inline Permission operator|(Permission lhs, Permission rhs)
@@ -73,7 +74,6 @@ namespace iot
         std::string parameter_description = "";
         ValueType type;
         int value = 0;
-
     };
 
     struct SpecAction
@@ -111,7 +111,7 @@ namespace iot
          */
         std::string callAction(const uint8_t &siid, const uint8_t &aiid);
         std::string callAction(const uint8_t &siid, const uint8_t &aiid, const uint8_t &piid, const uint8_t &value);
-        std::string callAction2(std::map<std::string, SpecAction> miotSpec,std::string key,std::map<uint8_t,int> av);
+        std::string callAction2(std::map<std::string, SpecAction> miotSpec, std::string key, std::map<uint8_t, int> av);
 
         std::string send(const std::string &command, const std::string &parameters);
         /**
