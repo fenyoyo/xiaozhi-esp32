@@ -316,6 +316,29 @@ namespace iot
             return;
         }
     }
+    int MiotDevice::tryHandshake()
+    {
+
+        Miot miot(ip_, token_);
+        try
+        {
+            for (size_t i = 0; i < 3; i++)
+            {
+                Message msg = miot.Handshake();
+                if (msg.success == true)
+                {
+                    ESP_LOGI(TAG, "tryHandshake success");
+                    return 0;
+                }
+            }
+        }
+        catch (const std::exception &e)
+        {
+            ESP_LOGI(TAG, "tryHandshake error:%s", e.what());
+        }
+
+        return -1;
+    }
     void MiotDevice::parseJsonGetValue(const std::string &jsonStr, uint8_t *value_)
     {
         cJSON *root = cJSON_Parse(jsonStr.data());

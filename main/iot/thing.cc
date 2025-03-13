@@ -90,9 +90,11 @@ namespace iot
         }
     }
 
-    void Thing::initMiot(const std::string& ip, const std::string& token,const std::string& name)
+    int Thing::initMiot(const std::string &ip, const std::string &token, const std::string &name)
     {
+        return 0;
     }
+
     void Thing::getProperties()
     {
     }

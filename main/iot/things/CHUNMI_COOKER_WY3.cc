@@ -40,9 +40,8 @@ namespace iot
 
         };
 
-
     public:
-    CHUNMI_COOKER_WY3() : Thing("米家智能小饭煲", "")
+        CHUNMI_COOKER_WY3() : Thing("米家智能小饭煲", "")
         {
             Register();
 
@@ -62,18 +61,17 @@ namespace iot
                                            auto value = static_cast<int8_t>(parameters[i.key].number());
                                            av.insert({i.piid, value});
                                        }
-                                       miotDevice.callAction2(miotSpecAction, it->first, av);
-                                   });
+                                       miotDevice.callAction2(miotSpecAction, it->first, av); });
             };
-        
         }
 
-        void initMiot(const std::string &ip, const std::string &token, const std::string &name) override
+        int initMiot(const std::string &ip, const std::string &token, const std::string &name) override
         {
             ip_ = ip;
             token_ = token;
             set_description(name);
             miotDevice = MiotDevice(ip_, token_);
+            return miotDevice.tryHandshake();
         }
 
         void getProperties() override

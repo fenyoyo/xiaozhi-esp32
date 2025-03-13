@@ -32,7 +32,7 @@ namespace iot
         int socket_handle = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
         if (socket_handle < 1)
         {
-            ESP_LOGE(TAG, "句柄初始化失败");
+            ESP_LOGE(TAG, "句柄初始化失败%d", socket_handle);
         }
         struct sockaddr_in dest_addr{};
         inet_pton(AF_INET, ip_.data(), &dest_addr.sin_addr);
@@ -69,7 +69,6 @@ namespace iot
         int len = recv(socket_handle, rx_buffer.data(), rx_buffer.size(), 0);
         if (len < 0)
         {
-            ESP_LOGE(TAG, "接收失败");
             return response;
         }
 

@@ -111,7 +111,12 @@ namespace iot
                 ESP_LOGE(TAG, "Failed to create thing");
                 continue;
             }
-            thing->initMiot(ip->valuestring, token->valuestring, name->valuestring);
+            auto err = thing->initMiot(ip->valuestring, token->valuestring, name->valuestring);
+            if (err != 0)
+            {
+                ESP_LOGW(TAG, "Failed to init:%s", name->valuestring);
+                continue;
+            }
             // thing->set_ip(ip->valuestring);
             // thing->set_token(token->valuestring);
             AddThing(thing);
@@ -144,7 +149,7 @@ namespace iot
     {
         std::string json_str = "[";
         for (auto &thing : things_)
-        {   
+        {
             thing->getProperties();
             json_str += thing->GetStateJson() + ",";
         }

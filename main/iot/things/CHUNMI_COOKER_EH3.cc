@@ -32,7 +32,7 @@ namespace iot
 
             {
                 "cooker:cancel-cooking",
-                {2, 2, "CancelCooking", "取消煮", {}},
+                {2, 2, "CancelCooking", "关闭", {}},
             },
         };
 
@@ -42,12 +42,14 @@ namespace iot
             Register();
         }
 
-        void initMiot(const std::string &ip, const std::string &token, const std::string &name) override
+        int initMiot(const std::string &ip, const std::string &token, const std::string &name) override
         {
             ip_ = ip;
             token_ = token;
             set_description(name);
             miotDevice = MiotDevice(ip_, token_);
+            return 0;
+            // return miotDevice.tryHandshake();
         }
 
         void getProperties() override

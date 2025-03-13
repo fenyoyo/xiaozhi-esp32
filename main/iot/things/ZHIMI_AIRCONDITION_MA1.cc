@@ -70,12 +70,13 @@ namespace iot
             Register();
         }
 
-        void initMiot(const std::string &ip, const std::string &token, const std::string &name) override
+        int initMiot(const std::string &ip, const std::string &token, const std::string &name) override
         {
             ip_ = ip;
             token_ = token;
             set_description(name);
             miotDevice = MiotDevice(ip_, token_);
+            return miotDevice.tryHandshake();
         }
 
         void getProperties() override

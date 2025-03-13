@@ -138,6 +138,7 @@ namespace iot
          * 检查是否存在错误
          */
         static void parseJsonHasError(const std::string &jsonStr, int8_t *value_);
+        int tryHandshake();
     };
 } // namespace iot
 
