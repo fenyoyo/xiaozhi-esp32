@@ -113,16 +113,7 @@ namespace iot
 
         void getProperties() override
         {
-            auto spec = miotDevice.getProperties2(miotSpec);
-            if (spec.empty())
-            {
-                return;
-            }
-            for (auto it = spec.begin(); it != spec.end(); ++it)
-            {
-                auto property = miotSpec.find(it->first);
-                property->second.value = it->second;
-            }
+            miotDevice.getProperties2(miotSpec);
         }
         void Register()
         {

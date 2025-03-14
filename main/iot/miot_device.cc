@@ -32,42 +32,42 @@ namespace iot
                            // ss.find("name");
                        });
 
-        unsigned char helo_char[] = {
-            0x21,
-            0x31,
-            0x00,
-            0x20,
-            0xff,
-            0xff,
-            0xff,
-            0xff,
-            0xff,
-            0xff,
-            0xff,
-            0xff,
-            0xff,
-            0xff,
-            0xff,
-            0xff,
-            0xff,
-            0xff,
-            0xff,
-            0xff,
-            0xff,
-            0xff,
-            0xff,
-            0xff,
-            0xff,
-            0xff,
-            0xff,
-            0xff,
-            0xff,
-            0xff,
-            0xff,
-            0xff,
-        };
-        std::string helo((char *)helo_char, sizeof(helo_char));
-        udp->Send(helo);
+        // unsigned char helo_char[] = {
+        //     0x21,
+        //     0x31,
+        //     0x00,
+        //     0x20,
+        //     0xff,
+        //     0xff,
+        //     0xff,
+        //     0xff,
+        //     0xff,
+        //     0xff,
+        //     0xff,
+        //     0xff,
+        //     0xff,
+        //     0xff,
+        //     0xff,
+        //     0xff,
+        //     0xff,
+        //     0xff,
+        //     0xff,
+        //     0xff,
+        //     0xff,
+        //     0xff,
+        //     0xff,
+        //     0xff,
+        //     0xff,
+        //     0xff,
+        //     0xff,
+        //     0xff,
+        //     0xff,
+        //     0xff,
+        //     0xff,
+        //     0xff,
+        // };
+        // std::string helo((char *)helo_char, sizeof(helo_char));
+        // udp->Send(helo);
     }
 
     std::string MiotDevice::getProperty(const std::string &did, const uint8_t &siid, const uint8_t &piid)
@@ -80,45 +80,6 @@ namespace iot
         // std::map<std::string, SIID_PIID> properties;
         return response;
     }
-
-    // std::map<std::string, int> MiotDevice::getProperties(const std::map<std::string, SIID_PIID> &properties)
-    // {
-    //     std::string jsonStr = "[";
-    //     for (auto it = properties.begin(); it != properties.end(); ++it)
-    //     {
-    //         jsonStr += "{\"did\": \"" + it->first + "\",";
-    //         jsonStr += "\"siid\": " + std::to_string(it->second.siid) + ",";
-    //         jsonStr += "\"piid\": " + std::to_string(it->second.piid);
-    //         jsonStr += "},";
-    //     }
-    //     jsonStr.pop_back();
-    //     jsonStr += "]";
-    //     auto response = send("get_properties", jsonStr);
-    //     std::map<std::string, int> result;
-
-    //     cJSON *root = cJSON_Parse(response.data());
-    //     if (root == NULL)
-    //     {
-    //         ESP_LOGE(TAG, "getProperties cJSON_Parse failed");
-    //         return result;
-    //     }
-
-    //     cJSON *result_ = cJSON_GetObjectItem(root, "result");
-    //     for (int i = 0; i < cJSON_GetArraySize(result_); i++)
-    //     {
-
-    //         cJSON *item = cJSON_GetArrayItem(result_, i);
-    //         cJSON *code = cJSON_GetObjectItem(item, "code");
-    //         if (code->valueint != 0)
-    //         {
-    //             continue;
-    //         }
-    //         cJSON *did = cJSON_GetObjectItem(item, "did");
-    //         cJSON *value = cJSON_GetObjectItem(item, "value");
-    //         result[did->valuestring] = value->valueint;
-    //     }
-    //     return result;
-    // }
 
     void MiotDevice::getProperties2(const std::map<std::string, SpecProperty> &properties)
     {
@@ -134,58 +95,6 @@ namespace iot
         jsonStr += "]";
         auto response = send("get_properties", jsonStr);
     }
-
-    // int8_t MiotDevice::getPropertyDoubleValue(const std::string &did, const uint8_t &siid, const uint8_t &piid, double *value)
-    // {
-    //     std::string jsonStr = "[{\"did\": \"" + did + "\",";
-    //     jsonStr += "\"siid\": " + std::to_string(siid) + ",";
-    //     jsonStr += "\"piid\": " + std::to_string(piid);
-    //     jsonStr += "}]";
-    //     auto response = send("get_properties", jsonStr);
-    //     if (response.empty())
-    //     {
-    //         return -1;
-    //     }
-    //     cJSON *root = cJSON_Parse(response.data());
-    //     cJSON *result = cJSON_GetObjectItem(root, "result");
-    //     cJSON *item = cJSON_GetArrayItem(result, 0);
-    //     cJSON *code = cJSON_GetObjectItem(item, "code");
-    //     if (code->valueint != 0)
-    //     {
-    //         return -2;
-    //     }
-    //     cJSON *value_ = cJSON_GetObjectItem(item, "value");
-    //     *value = value_->valuedouble;
-    //     return 0;
-    // }
-
-    // int8_t MiotDevice::getPropertyIntValue(const std::string &did, const uint8_t &siid, const uint8_t &piid, int *value)
-    // {
-    //     std::string jsonStr = "[{\"did\": \"" + did + "\",";
-    //     jsonStr += "\"siid\": " + std::to_string(siid) + ",";
-    //     jsonStr += "\"piid\": " + std::to_string(piid);
-    //     jsonStr += "}]";
-    //     auto response = send("get_properties", jsonStr);
-
-    //     if (response.empty())
-    //     {
-    //         return -1;
-    //     }
-    //     ESP_LOGI(TAG, "response:%s", response.c_str());
-    //     cJSON *root = cJSON_Parse(response.data());
-    //     cJSON *result = cJSON_GetObjectItem(root, "result");
-    //     cJSON *item = cJSON_GetArrayItem(result, 0);
-    //     ESP_LOGI(TAG, "response item:%s", cJSON_PrintUnformatted(item));
-    //     cJSON *code = cJSON_GetObjectItem(item, "code");
-
-    //     if (code->valueint != 0)
-    //     {
-    //         return -2;
-    //     }
-    //     cJSON *value_ = cJSON_GetObjectItem(item, "value");
-    //     *value = value_->valueint;
-    //     return 0;
-    // }
 
     /**
      * @brief 设置设备属性
@@ -233,26 +142,6 @@ namespace iot
         // 发送构建好的JSON请求字符串到设备，并返回设备的响应结果
         return send("set_properties", jsonStr);
     }
-    // void MiotDevice::setProperty(std::map<std::string, SIID_PIID> miotSpec, std::string key, const uint8_t &value, const bool &isBool)
-    // {
-    //     auto spec = miotSpec.find(key);
-    //     if (spec == miotSpec.end())
-    //     {
-    //         ESP_LOGE(TAG, "%s not found", key.data());
-    //         return;
-    //     }
-    //     std::string did = spec->first;
-    //     SIID_PIID sp = spec->second;
-    //     auto res = setProperty(did, sp.siid, sp.piid, value, isBool);
-    //     if (res.empty())
-    //     {
-    //         ESP_LOGE(TAG, "setProperty failed");
-    //         return;
-    //     }
-    //     cJSON *root = cJSON_Parse(res.data());
-    //     ESP_LOGI(TAG, "setProperty result:%s", cJSON_PrintUnformatted(root));
-    //     return;
-    // }
     void MiotDevice::setProperty2(std::map<std::string, SpecProperty> miotSpec, std::string key, const uint8_t &value, const bool &isBool)
     {
         auto spec = miotSpec.find(key);
@@ -264,14 +153,6 @@ namespace iot
         std::string did = spec->first;
         SpecProperty sp = spec->second;
         auto res = setProperty(did, sp.siid, sp.piid, value, isBool);
-        if (res.empty())
-        {
-            ESP_LOGE(TAG, "setProperty failed");
-            return;
-        }
-        cJSON *root = cJSON_Parse(res.data());
-        ESP_LOGI(TAG, "setProperty result:%s", cJSON_PrintUnformatted(root));
-        return;
     }
     std::string MiotDevice::callAction(const uint8_t &siid, const uint8_t &aiid)
     {

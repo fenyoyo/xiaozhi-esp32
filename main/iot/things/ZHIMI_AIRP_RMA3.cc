@@ -80,15 +80,12 @@ namespace iot
                                        {
                                            miotDevice.setstamp(message.header.stamp);
                                            miotDevice.setdeviceId(message.header.deviceID);
-                                           ESP_LOGI(TAG, "get timestamp_:%ld,deviceID_:%ld", message.header.stamp, message.header.deviceID);
-
                                            return;
                                        }
                                        auto json = message.decrypt(token_);
                                        cJSON *root = cJSON_Parse(json.data());
                                        if (root == NULL)
                                        {
-                                           ESP_LOGE(TAG, "getProperties cJSON_Parse failed2");
                                            return;
                                        }
 
@@ -115,7 +112,6 @@ namespace iot
                                            }
                                            auto m = miotSpec.find(did->valuestring);
                                            m->second.value = value->valueint;
-                                           ESP_LOGI(TAG, "set value :%s,%d", did->valuestring, value->valueint);
                                        }
 
                                        //

@@ -1,10 +1,7 @@
 #include "iot/thing.h"
 #include "iot/miot.h"
 #include <esp_log.h>
-#include "iot/protocol.h"
-#include "application.h"
 #include "iot/miot_device.h"
-#include "board.h"
 
 #define TAG "CUCO_PLUG_V3"
 
@@ -12,7 +9,6 @@ namespace iot
 {
     // 米家智能插座3
     // https://home.miot-spec.com/spec/cuco.plug.v3
-    // 只对接的开启电源状态
     class CUCO_PLUG_V3 : public Thing
     {
     private:
@@ -21,14 +17,19 @@ namespace iot
         MiotDevice miotDevice;
 
         std::map<std::string, SpecProperty> miotSpec = {
+
             {
                 "switch:on",
-                {2, 1, "开关", "", kValueTypeBoolean, Permission::READ | Permission::WRITE, "setOn", "设备开关"},
+                {2, 1, "开关", "", kValueTypeBoolean, Permission::READ | Permission::WRITE, "setOn", "设备开关|控制电源开关"},
             },
+
+        };
+        std::map<std::string, SpecAction> miotSpecAction = {
+
         };
 
     public:
-        CUCO_PLUG_V3() : Thing("小米智能插座3", "")
+        CUCO_PLUG_V3() : Thing("米家智能插座3", "")
         {
             Register();
         }
@@ -43,19 +44,17 @@ namespace iot
                                    {
                                        Message message;
                                        message.parse(data);
+
                                        if (message.header.packetLength == 32)
                                        {
                                            miotDevice.setstamp(message.header.stamp);
                                            miotDevice.setdeviceId(message.header.deviceID);
-                                           ESP_LOGI(TAG, "get timestamp_:%ld,deviceID_:%ld", message.header.stamp, message.header.deviceID);
-
                                            return;
                                        }
                                        auto json = message.decrypt(token_);
                                        cJSON *root = cJSON_Parse(json.data());
                                        if (root == NULL)
                                        {
-                                           ESP_LOGE(TAG, "getProperties cJSON_Parse failed2");
                                            return;
                                        }
 
@@ -64,7 +63,6 @@ namespace iot
                                        {
                                            return;
                                        }
-                                       ESP_LOGI(TAG, "getProperties result:%s", cJSON_PrintUnformatted(result_));
                                        for (int i = 0; i < cJSON_GetArraySize(result_); i++)
                                        {
 
@@ -82,7 +80,6 @@ namespace iot
                                            }
                                            auto m = miotSpec.find(did->valuestring);
                                            m->second.value = value->valueint;
-                                           ESP_LOGI(TAG, "set value :%s,%d", did->valuestring, value->valueint);
                                        }
                                        //
                                    });
@@ -139,6 +136,26 @@ namespace iot
                     );
                 }
             }
+
+            for (auto it = miotSpecAction.begin(); it != miotSpecAction.end(); ++it)
+            {
+                ParameterList parameterList;
+                for (auto &&i : it->second.parameters)
+                {
+                    parameterList.AddParameter(Parameter(i.key, i.parameter_description, i.type, true));
+                }
+                methods_.AddMethod(it->second.method_name, it->second.method_description, parameterList, [this, it](const ParameterList &parameters)
+                                   {
+                                       std::map<uint8_t, int> av;
+                                       // std::map<uint_8 piid,uint_8 value> value;
+                                       for (auto &&i : it->second.parameters)
+                                       {
+                                           auto value = static_cast<int8_t>(parameters[i.key].number());
+                                           av.insert({i.piid, value});
+                                       }
+                                       miotDevice.callAction2(miotSpecAction, it->first, av); //
+                                   });
+            };
         }
     };
 

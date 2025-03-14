@@ -18,7 +18,7 @@ namespace iot
 
     void ThingManager::InitMoit()
     {
-
+        // return;
         // 请求网络，获取micloud的设备列表
         // 发送广播，查看在线设备
         // TODO:经常性获取失败，需要重试
@@ -71,8 +71,6 @@ namespace iot
         if (root == nullptr)
         {
             ESP_LOGE(TAG, "Failed to parse json");
-            http->Close();
-            delete http;
             return;
         }
 
