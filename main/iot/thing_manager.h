@@ -25,20 +25,21 @@ namespace iot
         ThingManager &operator=(const ThingManager &) = delete;
 
         void AddThing(Thing *thing);
-        void InitMoit();
 
         std::string GetDescriptorsJson();
-        std::string GetStatesJson();
+        bool GetStatesJson(std::string &json, bool delta = false);
         void Invoke(const cJSON *command);
-        std::string processString(const std::string &input);
+        void InitMoit();
 
     private:
         ThingManager() = default;
         ~ThingManager() = default;
 
-        std::vector<Thing *> things_;
-    };
+        std::string processString(const std::string &input);
 
-} // namespace iot
+        std::vector<Thing *> things_;
+        std::map<std::string, std::string> last_states_;
+    };
+};
 
 #endif // THING_MANAGER_H

@@ -16,6 +16,90 @@ namespace iot
         things_.push_back(thing);
     }
 
+    bool ThingManager::GetStatesJson(std::string &json, bool delta)
+    {
+        if (!delta)
+        {
+            last_states_.clear();
+        }
+        bool changed = false;
+        json = "[";
+        // 枚举thing，获取每个thing的state，如果发生变化，则更新，保存到last_states_
+        // 如果delta为true，则只返回变化的部分
+        for (auto &thing : things_)
+        {
+            std::string state = thing->GetStateJson();
+            if (delta)
+            {
+                // 如果delta为true，则只返回变化的部分
+                auto it = last_states_.find(thing->name());
+                if (it != last_states_.end() && it->second == state)
+                {
+                    continue;
+                }
+                changed = true;
+                last_states_[thing->name()] = state;
+            }
+            json += state + ",";
+        }
+        if (json.back() == ',')
+        {
+            json.pop_back();
+        }
+        json += "]";
+        return changed;
+    }
+
+    void ThingManager::Invoke(const cJSON *command)
+    {
+        auto name = cJSON_GetObjectItem(command, "name");
+        for (auto &thing : things_)
+        {
+            if (thing->name() == name->valuestring)
+            {
+                thing->Invoke(command);
+                return;
+            }
+        }
+    }
+    std::string ThingManager::GetDescriptorsJson()
+    {
+        std::string json_str = "[";
+        for (auto &thing : things_)
+        {
+            json_str += thing->GetDescriptorJson() + ",";
+        }
+        if (json_str.back() == ',')
+        {
+            json_str.pop_back();
+        }
+        json_str += "]";
+        ESP_LOGI(TAG, "json_str:%s", json_str.c_str());
+        return json_str;
+    }
+
+    std::string ThingManager::processString(const std::string &input)
+    {
+        std::string result;
+        for (char c : input)
+        {
+            if (c == '.')
+            {
+                result += '_';
+            }
+            else if (std::isalpha(c))
+            {
+                result += std::toupper(c);
+            }
+            else
+            {
+                result += c;
+            }
+        }
+        return result;
+        // return std::string();
+    }
+
     void ThingManager::InitMoit()
     {
         // return;
@@ -121,73 +205,6 @@ namespace iot
         // {
         //     thing->initMiot();
         // }
-    }
-
-    std::string ThingManager::GetDescriptorsJson()
-    {
-        std::string json_str = "[";
-        for (auto &thing : things_)
-        {
-            json_str += thing->GetDescriptorJson() + ",";
-        }
-        if (json_str.back() == ',')
-        {
-            json_str.pop_back();
-        }
-        json_str += "]";
-        ESP_LOGI(TAG, "json_str:%s", json_str.c_str());
-        return json_str;
-    }
-
-    std::string ThingManager::GetStatesJson()
-    {
-        std::string json_str = "[";
-        for (auto &thing : things_)
-        {
-            thing->getProperties();
-            json_str += thing->GetStateJson() + ",";
-        }
-        if (json_str.back() == ',')
-        {
-            json_str.pop_back();
-        }
-        json_str += "]";
-        return json_str;
-    }
-
-    void ThingManager::Invoke(const cJSON *command)
-    {
-        auto name = cJSON_GetObjectItem(command, "name");
-        for (auto &thing : things_)
-        {
-            if (thing->name() == name->valuestring)
-            {
-                thing->Invoke(command);
-                return;
-            }
-        }
-    }
-
-    std::string ThingManager::processString(const std::string &input)
-    {
-        std::string result;
-        for (char c : input)
-        {
-            if (c == '.')
-            {
-                result += '_';
-            }
-            else if (std::isalpha(c))
-            {
-                result += std::toupper(c);
-            }
-            else
-            {
-                result += c;
-            }
-        }
-        return result;
-        // return std::string();
     }
 
 } // namespace iot
