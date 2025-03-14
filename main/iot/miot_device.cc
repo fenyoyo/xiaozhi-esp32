@@ -7,10 +7,67 @@
 #define TAG "MiotDevice"
 namespace iot
 {
-    MiotDevice::MiotDevice(const std::string &ip, const std::string &token)
+    MiotDevice::MiotDevice(const std::string &ip, const std::string &token, const uint32_t &did)
     {
         ip_ = ip;
         token_ = token;
+        deviceId_ = did;
+        ESP_LOGI(TAG, "MiotDevice init %ld", deviceId_);
+    }
+
+    void MiotDevice::init()
+    {
+        udp = new EspUdp();
+        udp->Connect(ip_, 54321);
+        udp->OnMessage([this](const std::string &data)
+                       {
+                           if (userCallback)
+                           {
+                               userCallback(data); // 调用外部回调函数
+                           }
+                           //    ESP_LOGI(TAG, "this pointer: %p", this);
+                           //    ESP_LOGI(TAG, "ss address: %p", &ss);
+                           //    auto message = Utils::stringToHexManual(data);
+                           //    ESP_LOGI(TAG, "Received: %s", message.data());
+                           // ss.find("name");
+                       });
+
+        unsigned char helo_char[] = {
+            0x21,
+            0x31,
+            0x00,
+            0x20,
+            0xff,
+            0xff,
+            0xff,
+            0xff,
+            0xff,
+            0xff,
+            0xff,
+            0xff,
+            0xff,
+            0xff,
+            0xff,
+            0xff,
+            0xff,
+            0xff,
+            0xff,
+            0xff,
+            0xff,
+            0xff,
+            0xff,
+            0xff,
+            0xff,
+            0xff,
+            0xff,
+            0xff,
+            0xff,
+            0xff,
+            0xff,
+            0xff,
+        };
+        std::string helo((char *)helo_char, sizeof(helo_char));
+        udp->Send(helo);
     }
 
     std::string MiotDevice::getProperty(const std::string &did, const uint8_t &siid, const uint8_t &piid)
@@ -63,7 +120,7 @@ namespace iot
     //     return result;
     // }
 
-    std::map<std::string, int> MiotDevice::getProperties2(const std::map<std::string, SpecProperty> &properties)
+    void MiotDevice::getProperties2(const std::map<std::string, SpecProperty> &properties)
     {
         std::string jsonStr = "[";
         for (auto it = properties.begin(); it != properties.end(); ++it)
@@ -76,31 +133,6 @@ namespace iot
         jsonStr.pop_back();
         jsonStr += "]";
         auto response = send("get_properties", jsonStr);
-        std::map<std::string, int> result;
-
-        cJSON *root = cJSON_Parse(response.data());
-        if (root == NULL)
-        {
-            ESP_LOGE(TAG, "getProperties cJSON_Parse failed");
-            return result;
-        }
-
-        cJSON *result_ = cJSON_GetObjectItem(root, "result");
-        ESP_LOGI(TAG, "getProperties result:%s", cJSON_PrintUnformatted(result_));
-        for (int i = 0; i < cJSON_GetArraySize(result_); i++)
-        {
-
-            cJSON *item = cJSON_GetArrayItem(result_, i);
-            cJSON *code = cJSON_GetObjectItem(item, "code");
-            if (code->valueint != 0)
-            {
-                continue;
-            }
-            cJSON *did = cJSON_GetObjectItem(item, "did");
-            cJSON *value = cJSON_GetObjectItem(item, "value");
-            result[did->valuestring] = value->valueint;
-        }
-        return result;
     }
 
     // int8_t MiotDevice::getPropertyDoubleValue(const std::string &did, const uint8_t &siid, const uint8_t &piid, double *value)
@@ -293,15 +325,18 @@ namespace iot
     std::string MiotDevice::send(const std::string &command, const std::string &parameters)
     {
         Miot miot(ip_, token_);
-        ESP_LOGI(TAG, "send command:%s,parameters:%s", command.c_str(), parameters.c_str());
-        Message msg = miot.Send(command, parameters);
-        if (msg.success == false)
-        {
-            ESP_LOGE(TAG, "msg.error:%d", msg.success);
-            return "";
-        }
-        auto res = msg.decrypt(token_);
-        return res;
+        Message msg = miot.Handshake();
+
+        // Message ss;
+        // ss.header.stamp = msg.header.stamp;
+        // ss.header.deviceID = deviceId_;
+        // ESP_LOGI(TAG, "send timestamp_:%ld,deviceID_:%ld", ss.header.stamp, ss.header.deviceID);
+
+        Message response;
+        std::string request = miot.createRequest(command, parameters);
+        std::string data = msg.build(request, token_);
+        udp->Send(data);
+        return "";
     }
     void MiotDevice::parseJsonHasError(const std::string &jsonStr, int8_t *value_)
     {

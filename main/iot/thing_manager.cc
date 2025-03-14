@@ -98,6 +98,7 @@ namespace iot
             cJSON *model = cJSON_GetObjectItem(item, "model");
             cJSON *ip = cJSON_GetObjectItem(item, "localip");
             cJSON *token = cJSON_GetObjectItem(item, "token");
+            cJSON *did = cJSON_GetObjectItem(item, "did");
             std::string model_str = processString(model->valuestring);
             ESP_LOGI(TAG, "name:%s", name->valuestring);
             ESP_LOGI(TAG, "model:%s", model->valuestring);
@@ -111,7 +112,7 @@ namespace iot
                 ESP_LOGE(TAG, "Failed to create thing");
                 continue;
             }
-            thing->initMiot(ip->valuestring, token->valuestring, name->valuestring);
+            thing->initMiot(ip->valuestring, token->valuestring, name->valuestring, std::stoi(did->valuestring));
             // thing->set_ip(ip->valuestring);
             // thing->set_token(token->valuestring);
             AddThing(thing);
@@ -144,7 +145,7 @@ namespace iot
     {
         std::string json_str = "[";
         for (auto &thing : things_)
-        {   
+        {
             thing->getProperties();
             json_str += thing->GetStateJson() + ",";
         }

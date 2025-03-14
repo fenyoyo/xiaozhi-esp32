@@ -46,7 +46,7 @@ namespace iot
         // };
 
     public:
-    CHUNMI_COOKER_WY4() : Thing("米家智能小饭煲", "")
+        CHUNMI_COOKER_WY4() : Thing("米家智能小饭煲", "")
         {
             Register();
 
@@ -66,31 +66,70 @@ namespace iot
                                            auto value = static_cast<int8_t>(parameters[i.key].number());
                                            av.insert({i.piid, value});
                                        }
-                                       miotDevice.callAction2(miotSpecAction, it->first, av);
-                                   });
+                                       miotDevice.callAction2(miotSpecAction, it->first, av); });
             };
         }
 
-        void initMiot(const std::string &ip, const std::string &token, const std::string &name) override
+        void initMiot(const std::string &ip, const std::string &token, const std::string &name, const uint32_t &did) override
         {
             ip_ = ip;
             token_ = token;
             set_description(name);
-            miotDevice = MiotDevice(ip_, token_);
+            miotDevice = MiotDevice(ip_, token_, did);
+            miotDevice.setCallback([this](const std::string &data)
+                                   {
+                                       Message message;
+                                       message.parse(data);
+
+                                       if (message.header.packetLength == 32)
+                                       {
+                                           miotDevice.setstamp(message.header.stamp);
+                                           miotDevice.setdeviceId(message.header.deviceID);
+                                           ESP_LOGI(TAG, "get timestamp_:%ld,deviceID_:%ld", message.header.stamp, message.header.deviceID);
+
+                                           return;
+                                       }
+                                       auto json = message.decrypt(token_);
+                                       cJSON *root = cJSON_Parse(json.data());
+                                       if (root == NULL)
+                                       {
+                                           ESP_LOGE(TAG, "getProperties cJSON_Parse failed2");
+                                           return;
+                                       }
+
+                                       cJSON *result_ = cJSON_GetObjectItem(root, "result");
+                                       if (result_->type != cJSON_Array)
+                                       {
+                                           return;
+                                       }
+                                       ESP_LOGI(TAG, "getProperties result:%s", cJSON_PrintUnformatted(result_));
+                                       for (int i = 0; i < cJSON_GetArraySize(result_); i++)
+                                       {
+
+                                           cJSON *item = cJSON_GetArrayItem(result_, i);
+                                           cJSON *code = cJSON_GetObjectItem(item, "code");
+                                           if (code->valueint != 0)
+                                           {
+                                               continue;
+                                           }
+                                           cJSON *did = cJSON_GetObjectItem(item, "did");
+                                           cJSON *value = cJSON_GetObjectItem(item, "value");
+                                           if (value == NULL)
+                                           {
+                                               continue;
+                                           }
+                                           auto m = miotSpec.find(did->valuestring);
+                                           m->second.value = value->valueint;
+                                           ESP_LOGI(TAG, "set value :%s,%d", did->valuestring, value->valueint);
+                                       }
+                                       //
+                                   });
+            miotDevice.init();
         }
 
         void getProperties() override
         {
-            auto spec = miotDevice.getProperties2(miotSpec);
-            if (spec.empty())
-            {
-                return;
-            }
-            for (auto it = spec.begin(); it != spec.end(); ++it)
-            {
-                auto property = miotSpec.find(it->first);
-                property->second.value = it->second;
-            }
+            miotDevice.getProperties2(miotSpec);
         }
         void Register()
         {

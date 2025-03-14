@@ -5,6 +5,7 @@
 #include <string>
 #include <cstdint>
 #include "iot/thing.h"
+#include <esp_udp.h>
 #define MOIT_ON 1
 #define MOIT_OFF 0
 
@@ -90,20 +91,33 @@ namespace iot
     private:
         std::string ip_;
         std::string token_;
+        uint32_t stamp_;
+        uint32_t deviceId_;
+        EspUdp *udp;
+        // std::map<std::string, std::string> ss = {};
+        std::function<void(const std::string &)> userCallback;
 
     public:
         MiotDevice() = default;
-        MiotDevice(const std::string &ip, const std::string &token);
-
+        MiotDevice(const std::string &ip, const std::string &token, const u_int32_t &did);
+        void setCallback(std::function<void(const std::string &)> callback)
+        {
+            userCallback = callback;
+        }
+        void setstamp(uint32_t stamp)
+        {
+            stamp_ = stamp;
+        }
+        void setdeviceId(uint32_t deviceId)
+        {
+            deviceId_ = deviceId;
+        }
+        void init();
         std::string getProperty(const std::string &did, const uint8_t &siid, const uint8_t &piid);
-        // std::map<std::string, int> getProperties(const std::map<std::string, SIID_PIID> &properties);
-        std::map<std::string, int> getProperties2(const std::map<std::string, SpecProperty> &properties);
-        // int8_t getPropertyDoubleValue(const std::string &did, const uint8_t &siid, const uint8_t &piid, double *value);
-        // int8_t getPropertyIntValue(const std::string &did, const uint8_t &siid, const uint8_t &piid, int *value);
+        void getProperties2(const std::map<std::string, SpecProperty> &properties);
 
         std::string setProperty(const std::string &did, const uint8_t &siid, const uint8_t &piid,
                                 const uint8_t &value, const bool &isBool = false);
-        // void setProperty(std::map<std::string, SIID_PIID> miotSpec, std::string key, const uint8_t &value, const bool &isBool = false);
         void setProperty2(std::map<std::string, SpecProperty> miotSpec, std::string key, const uint8_t &value, const bool &isBool = false);
         /**
          * 调用action
