@@ -115,7 +115,7 @@ namespace iot
         auto &wifiStation = WifiStation::GetInstance();
         auto ssid = wifiStation.GetSsid();
         std::string mac = SystemInfo::GetMacAddress();
-        std::string url = "http://192.168.2.106:8000/api/v1/devices/" + mac + "/miot?wifi_ssid=" + ssid;
+        std::string url = "http://39.108.80.140:8000/api/v1/devices/" + mac + "/miot?wifi_ssid=" + ssid;
         auto http = board.CreateHttp();
 
         std::string method = "GET";
@@ -147,28 +147,23 @@ namespace iot
             http->Close();
             delete http;
         }
-
-        ESP_LOGI(TAG, "response:%s", devicesJsonStr.c_str());
         // 判断是否是json格式
 
         cJSON *root = cJSON_Parse(devicesJsonStr.data());
         if (root == nullptr)
         {
-            ESP_LOGE(TAG, "Failed to parse json");
             return;
         }
 
         cJSON *code = cJSON_GetObjectItem(root, "code");
         if (code->valueint != 0)
         {
-            ESP_LOGE(TAG, "Failed to get devices from micloud");
             return;
         }
         cJSON *data = cJSON_GetObjectItem(root, "data");
         cJSON *open_iot = cJSON_GetObjectItem(data, "open_iot");
         if (cJSON_IsFalse(open_iot))
         {
-            ESP_LOGE(TAG, "open_miot is false");
             return;
         }
         cJSON *list = cJSON_GetObjectItem(data, "list");
@@ -182,12 +177,6 @@ namespace iot
             cJSON *token = cJSON_GetObjectItem(item, "token");
             cJSON *did = cJSON_GetObjectItem(item, "did");
             std::string model_str = processString(model->valuestring);
-            ESP_LOGI(TAG, "name:%s", name->valuestring);
-            ESP_LOGI(TAG, "model:%s", model->valuestring);
-            ESP_LOGI(TAG, "ip:%s", ip->valuestring);
-            ESP_LOGI(TAG, "token:%s", token->valuestring);
-            ESP_LOGI(TAG, "model_str:%s", model_str.c_str());
-            // ESP_LOGI(TAG, "name:%s,model:%s,ip:%s,token:%s", model_str.data(), model->valuestring, ip->valuestring, token->valuestring);
             auto thing = CreateThing(model_str);
             if (thing == nullptr)
             {

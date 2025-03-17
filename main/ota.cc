@@ -47,7 +47,6 @@ bool Ota::CheckVersion()
     if (check_version_url_.length() < 10)
     {
         ESP_LOGE(TAG, "Check version URL is not properly set");
-        ESP_LOGI(TAG, "Check version URL is not properly set");
         return false;
     }
 
