@@ -115,7 +115,8 @@ namespace iot
         auto &wifiStation = WifiStation::GetInstance();
         auto ssid = wifiStation.GetSsid();
         std::string mac = SystemInfo::GetMacAddress();
-        std::string url = "https://xiaozhi.uyuo.me/api/v1/devices/" + mac + "/miot?wifi_ssid=" + ssid;
+        // std::string url = "http://192.168.1.6:8000/api/v1/micloud/" + mac + "/iot?wifi_ssid=" + ssid;
+        std::string url = "https://xiaozhi.uyuo.me/api/v1/micloud/" + mac + "/iot?wifi_ssid=" + ssid;
         auto http = board.CreateHttp();
 
         std::string method = "GET";
