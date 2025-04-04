@@ -215,6 +215,7 @@ namespace iot
 
         Message response;
         std::string request = miot.createRequest(command, parameters);
+        ESP_LOGI(TAG, "send request:%s", request.data());
         std::string data = msg.build(request, token_);
         udp->Send(data);
         return "";

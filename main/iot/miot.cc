@@ -4,7 +4,6 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/event_groups.h>
 #include <freertos/task.h>
-#include <projdefs.h>
 #include <esp_log.h>
 #include <lwip/sockets.h>
 #include <netdb.h>

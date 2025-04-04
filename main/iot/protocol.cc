@@ -2,9 +2,11 @@
 
 #include <iostream>
 #include <vector>
-#include <wolfssl/wolfcrypt/aes.h>
-#include <wolfssl/wolfcrypt/logging.h>
-#include <wolfssl/wolfcrypt/md5.h>
+// #include <wolfssl/wolfcrypt/aes.h>
+// #include <wolfssl/wolfcrypt/logging.h>
+// #include <wolfssl/wolfcrypt/md5.h>
+#include <mbedtls/aes.h>
+#include <mbedtls/md5.h>
 #include <lwip/def.h>
 namespace iot
 {
@@ -21,34 +23,90 @@ namespace iot
         return hexStr;
     }
 
-    std::string Utils::md5(const std::string &data)
+    std::string Utils::md5Hash(const std::string &input)
     {
-        Md5 md5;
-        byte checksum[MD5_DIGEST_SIZE];
-        int ret = wc_InitMd5(&md5);
-        if (ret != 0)
+        mbedtls_md5_context ctx;
+        unsigned char output[16]; // MD5 输出为 16 字节
+
+        mbedtls_md5_init(&ctx);
+        mbedtls_md5_starts(&ctx);
+        mbedtls_md5_update(&ctx,
+                           reinterpret_cast<const unsigned char *>(input.data()),
+                           input.length());
+        mbedtls_md5_finish(&ctx, output);
+        mbedtls_md5_free(&ctx);
+
+        return std::string(output, output + 16);
+    }
+
+    std::string Utils::aes_cbc_encrypt(
+        const std::string &key,
+        const std::string &iv,
+        const std::string &plaintext)
+    {
+        mbedtls_aes_context ctx;
+        std::string ciphertext(plaintext.size(), '\0');
+        std::string iv_copy = iv; // 需要可修改的 IV 副本
+
+        mbedtls_aes_init(&ctx);
+
+        // 设置加密密钥
+        if (mbedtls_aes_setkey_enc(&ctx,
+                                   reinterpret_cast<const unsigned char *>(key.data()),
+                                   key.size() * 8) != 0)
         {
-            wc_Md5Free(&md5);
-            WOLFSSL_MSG("wc_Initmd5 failed");
-            return {};
+            mbedtls_aes_free(&ctx);
         }
-        ret = wc_Md5Update(&md5, reinterpret_cast<const byte *>(data.c_str()), data.size());
-        if (ret != 0)
+
+        // 执行加密
+        if (mbedtls_aes_crypt_cbc(
+                &ctx,
+                MBEDTLS_AES_ENCRYPT,
+                plaintext.size(),
+                reinterpret_cast<unsigned char *>(iv_copy.data()),
+                reinterpret_cast<const unsigned char *>(plaintext.data()),
+                reinterpret_cast<unsigned char *>(ciphertext.data())) != 0)
         {
-            wc_Md5Free(&md5);
-            WOLFSSL_MSG("wc_Md5Update failed");
-            return {};
+            mbedtls_aes_free(&ctx);
         }
-        ret = wc_Md5Final(&md5, checksum);
-        if (ret != 0)
+
+        mbedtls_aes_free(&ctx);
+        return ciphertext;
+    }
+
+    std::string Utils::aes_cbc_decrypt(
+        const std::string &key,
+        const std::string &iv,
+        const std::string &ciphertext)
+    {
+        mbedtls_aes_context ctx;
+        std::string plaintext(ciphertext.size(), '\0');
+        std::string iv_copy = iv; // 需要可修改的 IV 副本
+
+        mbedtls_aes_init(&ctx);
+
+        // 设置解密密钥
+        if (mbedtls_aes_setkey_dec(&ctx,
+                                   reinterpret_cast<const unsigned char *>(key.data()),
+                                   key.size() * 8) != 0)
         {
-            wc_Md5Free(&md5);
-            WOLFSSL_MSG("wc_Md5Final failed");
-            return {};
+            mbedtls_aes_free(&ctx);
         }
-        wc_Md5Free(&md5);
-        std::string _c(checksum, checksum + MD5_DIGEST_SIZE);
-        return _c;
+
+        // 执行解密
+        if (mbedtls_aes_crypt_cbc(
+                &ctx,
+                MBEDTLS_AES_DECRYPT,
+                ciphertext.size(),
+                reinterpret_cast<unsigned char *>(iv_copy.data()),
+                reinterpret_cast<const unsigned char *>(ciphertext.data()),
+                reinterpret_cast<unsigned char *>(plaintext.data())) != 0)
+        {
+            mbedtls_aes_free(&ctx);
+        }
+
+        mbedtls_aes_free(&ctx);
+        return plaintext;
     }
 
     std::string Utils::pkcs7Padding(const std::string &data, size_t blockSize)
@@ -84,7 +142,7 @@ namespace iot
     {
         const std::string x = header + token + data;
 
-        return md5(x);
+        return md5Hash(x);
     }
 
     std::string Utils::hexStringToByteArray(const std::string &hexString)
@@ -201,9 +259,9 @@ namespace iot
     {
         std::string _token = Utils::hexStringToByteArray(token);
 
-        std::string key = Utils::md5(_token);
+        std::string key = Utils::md5Hash(_token);
         // std::cout << "key:" << Utils::stringToHexManual(key) << std::endl;
-        std::string iv = Utils::md5(key + _token);
+        std::string iv = Utils::md5Hash(key + _token);
         // std::cout << "iv:" << Utils::stringToHexManual(iv) << std::endl;
 
         std::string _msg = msg;
@@ -211,64 +269,68 @@ namespace iot
         // std::cout << "msg size:" << std::to_string(_msg.size()) << std::endl;
         _msg.push_back(0x00);
         // std::cout << "msg size:" << std::to_string(_msg.size()) << std::endl;
-        std::string padded_data = Utils::pkcs7Padding(_msg, AES_BLOCK_SIZE);
+        std::string padded_data = Utils::pkcs7Padding(_msg, 16);
         // std::cout << "padded_data:" << Utils::stringToHexManual(padded_data) << std::endl;
-        Aes aes;
-        if (wc_AesSetKey(&aes, reinterpret_cast<const byte *>(key.data()), key.size(),
-                         reinterpret_cast<const byte *>(iv.data()), AES_ENCRYPTION) != 0)
-        {
-            std::cerr << "AES key set failed." << std::endl;
-        }
 
-        byte encrypted[padded_data.size()];
-        // 进行加密操作
-        if (wc_AesCbcEncrypt(&aes, encrypted, reinterpret_cast<const byte *>(padded_data.data()),
-                             padded_data.size()) != 0)
-        {
-            std::cerr << "Encryption failed." << std::endl;
-            wc_AesFree(&aes);
-        }
-        wc_AesFree(&aes);
+        std::string ciphertext = Utils::aes_cbc_encrypt(key, iv, padded_data);
+
+        // Aes aes;
+        // if (wc_AesSetKey(&aes, reinterpret_cast<const byte *>(key.data()), key.size(),
+        //                  reinterpret_cast<const byte *>(iv.data()), AES_ENCRYPTION) != 0)
+        // {
+        //     std::cerr << "AES key set failed." << std::endl;
+        // }
+
+        // byte encrypted[padded_data.size()];
+        // // 进行加密操作
+        // if (wc_AesCbcEncrypt(&aes, encrypted, reinterpret_cast<const byte *>(padded_data.data()),
+        //                      padded_data.size()) != 0)
+        // {
+        //     std::cerr << "Encryption failed." << std::endl;
+        //     wc_AesFree(&aes);
+        // }
+        // wc_AesFree(&aes);
 
         // data.reserve(padded_data.size());
         // // 进行加密操作'
         // 这里的data赋值不成功
         // data.append(encrypted, encrypted + padded_data.size());
-        std::string _encrypted(encrypted, encrypted + padded_data.size());
-        header.packetLength = _encrypted.size() + 32;
-        checksumOrToken = Utils::Md5Checksum(headerSerialize(), _token, _encrypted);
+        // std::string _encrypted(encrypted, encrypted + padded_data.size());
+        header.packetLength = ciphertext.size() + 32;
+        checksumOrToken = Utils::Md5Checksum(headerSerialize(), _token, ciphertext);
 
         std::string packetData;
         std::string headerData = header.headerSerialize();
         packetData += headerData;
         packetData += checksumOrToken;
-        packetData += _encrypted;
+        packetData += ciphertext;
         return packetData;
     }
 
     std::string Message::decrypt(const std::string &token)
     {
         std::string _token = Utils::hexStringToByteArray(token);
-        std::string key = Utils::md5(_token);
+        std::string key = Utils::md5Hash(_token);
 
-        std::string iv = Utils::md5(key + _token);
+        std::string iv = Utils::md5Hash(key + _token);
 
-        Aes aes;
-        if (wc_AesSetKey(&aes, reinterpret_cast<const byte *>(key.data()), key.size(),
-                         reinterpret_cast<const byte *>(iv.data()), AES_DECRYPTION) != 0)
-        {
-            std::cerr << "AES key set failed." << std::endl;
-        }
-        // std::vector<unsigned char> decrypted(data.size());
-        byte decrypted[data.size()];
-        // 进行加密操作
-        if (wc_AesCbcDecrypt(&aes, decrypted, reinterpret_cast<const byte *>(data.data()), data.size()) != 0)
-        {
-            std::cerr << "Encryption failed." << std::endl;
-            wc_AesFree(&aes);
-        }
-        std::string _decrypted(decrypted, decrypted + data.size());
-        std::string unpadded_plaintext = Utils::pkcs7UnPadding(_decrypted);
+        std::string decrypted = Utils::aes_cbc_decrypt(key, iv, data);
+        // Aes aes;
+        // if (wc_AesSetKey(&aes, reinterpret_cast<const byte *>(key.data()), key.size(),
+        //                  reinterpret_cast<const byte *>(iv.data()), AES_DECRYPTION) != 0)
+        // {
+        //     std::cerr << "AES key set failed." << std::endl;
+        // }
+        // // std::vector<unsigned char> decrypted(data.size());
+        // byte decrypted[data.size()];
+        // // 进行加密操作
+        // if (wc_AesCbcDecrypt(&aes, decrypted, reinterpret_cast<const byte *>(data.data()), data.size()) != 0)
+        // {
+        //     std::cerr << "Encryption failed." << std::endl;
+        //     wc_AesFree(&aes);
+        // }
+        // std::string _decrypted(decrypted, decrypted + data.size());
+        std::string unpadded_plaintext = Utils::pkcs7UnPadding(decrypted);
         return unpadded_plaintext;
     }
 }

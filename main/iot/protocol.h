@@ -13,7 +13,12 @@ namespace iot
     public:
         static std::string stringToHexManual(const std::string &input);
 
-        static std::string md5(const std::string &data);
+        // static std::string md5(const std::string &data);
+        static std::string md5Hash(const std::string &data);
+
+        static std::string aes_cbc_encrypt(const std::string &key, const std::string &iv, const std::string &plaintext);
+
+        static std::string aes_cbc_decrypt(const std::string &key, const std::string &iv, const std::string &ciphertext);
 
         static std::string pkcs7Padding(const std::string &data, size_t block_size);
 

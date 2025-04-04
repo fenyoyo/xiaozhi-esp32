@@ -27,5 +27,3 @@ dependencies:
   ## Required IDF version
   idf:
     version: '>=5.3'
-
-  wolfssl/wolfssl: ^5.7.4
