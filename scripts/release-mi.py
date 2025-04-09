@@ -2,6 +2,7 @@ import sys
 import os
 import json
 import zipfile
+import shutil
 
 # 切换到项目根目录
 os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -39,7 +40,14 @@ def zip_bin(board_type, project_version):
     with zipfile.ZipFile(output_path, 'w', compression=zipfile.ZIP_DEFLATED) as zipf:
         zipf.write("build/merged-binary.bin", arcname="merged-binary.bin")
     print(f"zip bin to {output_path} done")
-    
+def ota_bin(board_type, project_version):
+    if not os.path.exists(f"releases/v{project_version}_{board_type}"):
+        os.makedirs(f"releases/v{project_version}_{board_type}")
+    output_path = f"releases/v{project_version}_{board_type}/xiaozhi.bin"
+    if os.path.exists(output_path):
+        os.remove(output_path)
+    shutil.copyfile("build/xiaozhi.bin", output_path)
+    print(f"copy ota bin to {output_path} done")
 
 def release_current():
     merge_bin()
@@ -48,6 +56,7 @@ def release_current():
     project_version = get_project_version()
     print("project version:", project_version)
     zip_bin(board_type, project_version)
+    ota_bin(board_type, project_version)
 
 def get_all_board_types():
     board_configs = {}
@@ -69,6 +78,9 @@ def release(board_type, board_config):
     if not os.path.exists(config_path):
         print(f"跳过 {board_type} 因为 config.json 不存在")
         return
+    if board_type in ["atommatrix-echo-base", "atoms3-echo-base","atoms3r-cam-m12-echo-base","atoms3r-echo-base"]:
+        print(f"跳过 {board_type} 因为不支持")
+        return
 
     # Print Project Version
     project_version = get_project_version()
@@ -82,7 +94,9 @@ def release(board_type, board_config):
         config = json.load(f)
     target = config["target"]
     builds = config["builds"]
-    
+    if target == "esp32":
+        print(f"跳过 {target} 因为不持支")
+        return
     for build in builds:
         name = build["name"]
         if not name.startswith(board_type):
@@ -116,6 +130,7 @@ def release(board_type, board_config):
             sys.exit(1)
         # Zip bin
         zip_bin(name, project_version)
+        ota_bin(name, project_version)
         print("-" * 80)
 
 if __name__ == "__main__":

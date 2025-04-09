@@ -136,6 +136,7 @@ namespace iot
         else
         {
             auto response = http->GetBody();
+            ESP_LOGI(TAG, "devices response:%s", response.c_str());
             if (response.empty())
             {
                 ESP_LOGE(TAG, "Failed to get response from server 2");

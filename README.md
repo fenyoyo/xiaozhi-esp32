@@ -146,3 +146,16 @@
    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=78/xiaozhi-esp32&type=Date" />
  </picture>
 </a>
+
+cd .\build\
+
+esptool.py --chip esp32s3 merge_bin -o merged-binary.bin -f raw --flash_mode dio --flash_freq 80m --flash_size 16MB 0x0 bootloader/bootloader.bin 0x100000 xiaozhi.bin 0x8000 partition_table/partition-table.bin 0xd000 ota_data_initial.bin 0x10000 srmodels/srmodels.bin
+
+
+docker run --rm -v ${PWD}:/project -w /project espressif/idf:release-v5.4 idf.py build 
+
+CONFIG_IDF_TARGET_ESP32S3=y
+CONFIG_BOARD_TYPE_XINGZHI_Cube_0_96OLED_WIFI=y
+CONFIG_OTA_VERSION_URL="https://xiaozhi.uyuo.me/api/v1/devices/ota"
+CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
+CONFIG_ESPTOOLPY_FLASHSIZE="16MB"
