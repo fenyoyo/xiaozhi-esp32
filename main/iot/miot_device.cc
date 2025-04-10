@@ -1,5 +1,6 @@
 #include "miot_device.h"
 #include "iot/miot.h"
+#include "iot/udp_task.h"
 
 #include <esp_log.h>
 #include <cJSON.h>
@@ -7,67 +8,19 @@
 #define TAG "MiotDevice"
 namespace iot
 {
-    MiotDevice::MiotDevice(const std::string &ip, const std::string &token, const uint32_t &did)
+    MiotDevice::MiotDevice(const std::string &ip, const std::string &token, const uint32_t &did) : m_ip(ip), m_token(token), m_deviceId(did)
     {
-        ip_ = ip;
-        token_ = token;
-        deviceId_ = did;
-        ESP_LOGI(TAG, "MiotDevice init %ld", deviceId_);
+        ESP_LOGI(TAG, "MiotDevice constructor %s %s %ld", ip.data(), token.data(), did);
     }
+    // {
+    //     ip_ = ip;
+    //     token_ = token;
+    //     deviceId_ = did;
+    //     ESP_LOGI(TAG, "MiotDevice init %ld", deviceId_);
+    // }
 
     void MiotDevice::init()
     {
-        udp = new EspUdp();
-        udp->Connect(ip_, 54321);
-        udp->OnMessage([this](const std::string &data)
-                       {
-                           if (userCallback)
-                           {
-                               userCallback(data); // 调用外部回调函数
-                           }
-                           //    ESP_LOGI(TAG, "this pointer: %p", this);
-                           //    ESP_LOGI(TAG, "ss address: %p", &ss);
-                           //    auto message = Utils::stringToHexManual(data);
-                           //    ESP_LOGI(TAG, "Received: %s", message.data());
-                           // ss.find("name");
-                       });
-
-        // unsigned char helo_char[] = {
-        //     0x21,
-        //     0x31,
-        //     0x00,
-        //     0x20,
-        //     0xff,
-        //     0xff,
-        //     0xff,
-        //     0xff,
-        //     0xff,
-        //     0xff,
-        //     0xff,
-        //     0xff,
-        //     0xff,
-        //     0xff,
-        //     0xff,
-        //     0xff,
-        //     0xff,
-        //     0xff,
-        //     0xff,
-        //     0xff,
-        //     0xff,
-        //     0xff,
-        //     0xff,
-        //     0xff,
-        //     0xff,
-        //     0xff,
-        //     0xff,
-        //     0xff,
-        //     0xff,
-        //     0xff,
-        //     0xff,
-        //     0xff,
-        // };
-        // std::string helo((char *)helo_char, sizeof(helo_char));
-        // udp->Send(helo);
     }
 
     std::string MiotDevice::getProperty(const std::string &did, const uint8_t &siid, const uint8_t &piid)
@@ -205,19 +158,20 @@ namespace iot
 
     std::string MiotDevice::send(const std::string &command, const std::string &parameters)
     {
-        Miot miot(ip_, token_);
-        Message msg = miot.Handshake();
+        ESP_LOGI(TAG, "send ip:%s", m_ip.data());
+        UdpTask *udp = new UdpTask(m_ip, m_token, command, parameters);
+        udp->setCallback([this](bool success, const std::string &response)
+                         {
+                               if (success)
+                               {
+                                    ESP_LOGI(TAG, "Received response: %s", response.c_str());
 
-        // Message ss;
-        // ss.header.stamp = msg.header.stamp;
-        // ss.header.deviceID = deviceId_;
-        // ESP_LOGI(TAG, "send timestamp_:%ld,deviceID_:%ld", ss.header.stamp, ss.header.deviceID);
-
-        Message response;
-        std::string request = miot.createRequest(command, parameters);
-        ESP_LOGI(TAG, "send request:%s", request.data());
-        std::string data = msg.build(request, token_);
-        udp->Send(data);
+                               }
+                               else
+                               {
+                                   ESP_LOGE(TAG, "Failed to receive response");
+                               } });
+        udp->start();
         return "";
     }
     void MiotDevice::parseJsonHasError(const std::string &jsonStr, int8_t *value_)

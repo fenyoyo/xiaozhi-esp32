@@ -89,12 +89,10 @@ namespace iot
     class MiotDevice
     {
     private:
-        std::string ip_;
-        std::string token_;
+        std::string m_ip;
+        std::string m_token;
         uint32_t stamp_;
-        uint32_t deviceId_;
-        EspUdp *udp;
-        // std::map<std::string, std::string> ss = {};
+        uint32_t m_deviceId;
         std::function<void(const std::string &)> userCallback;
 
     public:
@@ -110,7 +108,7 @@ namespace iot
         }
         void setdeviceId(uint32_t deviceId)
         {
-            deviceId_ = deviceId;
+            m_deviceId = deviceId;
         }
         void init();
         std::string getProperty(const std::string &did, const uint8_t &siid, const uint8_t &piid);

@@ -26,6 +26,11 @@ namespace iot
         json = "[";
         // 枚举thing，获取每个thing的state，如果发生变化，则更新，保存到last_states_
         // 如果delta为true，则只返回变化的部分
+        // for (auto &thing : things_)
+        // {
+        //     // 获取thing的状态
+        //     thing->getProperties();
+        // }
         for (auto &thing : things_)
         {
             std::string state = thing->GetStateJson();
