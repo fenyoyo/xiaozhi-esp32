@@ -1,15 +1,15 @@
 #include "iot/thing.h"
 #include "iot/miot.h"
-#include <esp_log.h>
+#include "esp_log.h"
 #include "iot/miot_device.h"
 
-#define TAG "XIAOMI_TV_MIH1"
+#define TAG "YEELINK_LIGHT_FANCL1"
 
 namespace iot
 {
-    // 小米电视
-    // https://home.miot-spec.com/spec/xiaomi.tv.mih1
-    class XIAOMI_TV_MIH1 : public Thing
+    // Yeelight 逸扬风扇吊灯（智能款）
+    // https://home.miot-spec.com/spec/yeelink.light.fancl1
+    class YEELINK_LIGHT_FANCL1 : public Thing
     {
     private:
         std::string ip_;
@@ -19,20 +19,122 @@ namespace iot
         std::map<std::string, SpecProperty> miotSpec = {
 
             {
-                "speaker:volume",
-                {4, 1, "音量", "", kValueTypeNumber, Permission::READ | Permission::WRITE, "setVolume", "设置音量大小,0-100"},
+                "light:on",
+                {2, 1, "是否打开灯", "", kValueTypeBoolean, Permission::READ | Permission::WRITE, "setOn", "打开或者关闭灯"},
             },
+
+            {
+                "light:mode",
+                {2, 2, "模式", "", kValueTypeNumber, Permission::READ | Permission::WRITE, "setMode", "设置模式:0=白天模式 1=夜晚模式"},
+            },
+
+            {
+                "light:brightness",
+                {2, 3, "亮度", "", kValueTypeNumber, Permission::READ | Permission::WRITE, "setBrightness", "设置亮度:0-100"},
+            },
+
+            // {
+            //     "light:color-temperature",
+            //     {2, 5, "色温", "", kValueTypeNumber, Permission::READ | Permission::WRITE, "setColorTemperature", "设置灯光色温:1700-6500"},
+            // },
+
+            // {
+            //     "light:flow",
+            //     {2, 6, "flow", "", kValueTypeNumber, Permission::READ | Permission::WRITE, "setFlow", "Flow"},
+            // },
+
+            // {
+            //     "light:off-delay-time",
+            //     {2, 7, "off-delay-time", "", kValueTypeNumber, Permission::READ | Permission::WRITE, "setOffDelayTime", "Power Off Delay Time"},
+            // },
+
+            {
+                "fan:on",
+                {3, 1, "是否打开风扇", "", kValueTypeBoolean, Permission::READ | Permission::WRITE, "setOn", "打开或者关闭风扇"},
+            },
+
+            {
+                "fan:fan-level",
+                {3, 2, "风扇风力", "", kValueTypeNumber, Permission::READ | Permission::WRITE, "setFanLevel", "设置风扇风力:0-2档"},
+            },
+
+            // {
+            //     "fan:mode",
+            //     {3, 7, "mode", "", kValueTypeNumber, Permission::READ | Permission::WRITE, "setMode", "Mode"},
+            // },
+
+            // {
+            //     "fan:status",
+            //     {3, 8, "status", "", kValueTypeNumber, Permission::READ, "setStatus", "Status"},
+            // },
+
+            // {
+            //     "fan:fault",
+            //     {3, 9, "fault", "", kValueTypeNumber, Permission::READ, "setFault", "Device Fault"},
+            // },
+
+            // {
+            //     "fan:off-delay-time",
+            //     {3, 10, "off-delay-time", "", kValueTypeNumber, Permission::READ | Permission::WRITE, "setOffDelayTime", "Power Off Delay Time"},
+            // },
+
+            // {
+            //     "yl-light:init-power-opt",
+            //     {4, 1, "init-power-opt", "", kValueTypeNumber, Permission::READ | Permission::WRITE, "setInitPowerOpt", "上电是否开灯"},
+            // },
+
+            // {
+            //     "yl-light:scene-param",
+            //     {4, 3, "scene-param", "", kValueTypeString, Permission::READ | Permission::WRITE, "setSceneParam", ""},
+            // },
+
+            // {
+            //     "yl-fan:fan-init-power-opt",
+            //     {5, 1, "fan-init-power-opt", "", kValueTypeNumber, Permission::READ | Permission::WRITE, "setFanInitPowerOpt", "上电是否开风扇"},
+            // },
+
         };
         std::map<std::string, SpecAction> miotSpecAction = {
 
-            {
-                "television:turn-off",
-                {2, 1, "TurnOff", "打开或者关闭", {}},
-            },
+            // {
+            //     "light:toggle",
+            //     {2, 1, "Toggle", "Toggle", {}},
+            // },
+
+            // {
+            //     "fan:toggle",
+            //     {3, 1, "Toggle", "Toggle", {}},
+            // },
+
+            // {
+            //     "yl-light:set-scene",
+            //     {4, 1, "SetScene", "设置灯光情景", {SpecActionParam(3, "value3", "参数描述", kValueTypeNumber)}},
+            // },
+
+            // {
+            //     "yl-light:brightness-cycle",
+            //     {4, 2, "BrightnessCycle", "亮度切换（智能联动）", {}},
+            // },
+
+            // {
+            //     "yl-light:ct-cycle",
+            //     {4, 3, "CtCycle", "色温切换（智能联动）", {}},
+            // },
+
+            // {
+            //     "yl-light:fan-gears-cycle",
+            //     {4, 4, "FanGearsCycle", "风扇档位切换（智能联动）", {}},
+            // },
+
+            // {
+            //     "yl-fan:fan-gears-cycle",
+            //     {5, 1, "FanGearsCycle", "风扇档位切换（智能联动）", {}},
+            // },
+
         };
 
     public:
-        XIAOMI_TV_MIH1() : Thing("小米电视", "")
+        YEELINK_LIGHT_FANCL1() : Thing("Yeelight 逸扬风扇吊灯（智能款）", "")
         {
             Register();
         }
@@ -80,7 +182,7 @@ namespace iot
                                            {
                                                auto value = static_cast<int8_t>(parameters["value"].boolean());
                                                miotDevice.setProperty2(miotSpec, it->first, value, true); //
-                                               miotSpec.find(it->first)->second.value = value;            //
+                                               miotSpec.find(it->first)->second.value = value;
                                            }
                                            else if (it->second.type == kValueTypeNumber)
                                            {
@@ -124,4 +226,4 @@ namespace iot
 
 } // namespace iot
 
-DECLARE_THING(XIAOMI_TV_MIH1);
+DECLARE_THING(YEELINK_LIGHT_FANCL1);

@@ -67,9 +67,9 @@ void UdpTask::run()
 {
     while (true)
     {
-        ESP_LOGI(TAG, "Task running");
-        ESP_LOGI(TAG, "Running on core %d", xPortGetCoreID());
-        ESP_LOGI(TAG, "Task running:%s", m_udpHost.c_str());
+        // ESP_LOGI(TAG, "Task running");
+        // ESP_LOGI(TAG, "Running on core %d", xPortGetCoreID());
+        // ESP_LOGI(TAG, "Task running:%s", m_udpHost.c_str());
         if (udpConnect())
         {
             unsigned char helo_char[] = {
@@ -124,7 +124,7 @@ void UdpTask::run()
                 else
                 {
                     handData.resize(ret);
-                    ESP_LOGI(TAG, "接收到数据2：%s", handData.c_str());
+                    // ESP_LOGI(TAG, "接收到数据2：%s", handData.c_str());
                     iot::Message msg;
                     msg.parse(handData);
 
@@ -149,12 +149,12 @@ void UdpTask::run()
                         else
                         {
                             iotData.resize(ret);
-                            ESP_LOGI(TAG, "接收到数据：%s", iotData.c_str());
+                            // ESP_LOGI(TAG, "接收到数据：%s", iotData.c_str());
                             iot::Message msg2;
                             msg2.parse(iotData);
                             auto body = msg2.decrypt(m_token);
                             msg2.success = true;
-                            ESP_LOGI(TAG, "解密数据：%s", msg2.data.c_str());
+                            // ESP_LOGI(TAG, "解密数据：%s", msg2.data.c_str());
                             if (m_callback)
                             {
                                 m_callback(true, body);
@@ -187,36 +187,36 @@ void UdpTask::run()
 
 bool UdpTask::udpConnect()
 {
-    ESP_LOGI(TAG, "udp_fd_:%d", udp_fd_);
+    // ESP_LOGI(TAG, "udp_fd_:%d", udp_fd_);
     if (udp_fd_ >= 0)
     {
         close(udp_fd_); // 关闭之前的套接字
         udp_fd_ = -1;   // 标记为无效
     }
 
-    ESP_LOGE(TAG, "run 1");
+    // ESP_LOGE(TAG, "run 1");
     struct sockaddr_in server_addr;
     bzero(&server_addr, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(port);
     // host is domain
-    ESP_LOGE(TAG, "run 2");
+    // ESP_LOGE(TAG, "run 2");
     struct hostent *server = gethostbyname(m_udpHost.c_str());
     if (server == NULL)
     {
         ESP_LOGE(TAG, "Failed to get host by name");
         return false;
     }
-    ESP_LOGE(TAG, "run 3");
+    // ESP_LOGE(TAG, "run 3");
     memcpy(&server_addr.sin_addr, server->h_addr, server->h_length);
-    ESP_LOGE(TAG, "run 4");
+    // ESP_LOGE(TAG, "run 4");
     udp_fd_ = socket(AF_INET, SOCK_DGRAM, 0);
     if (udp_fd_ < 0)
     {
         ESP_LOGE(TAG, "Failed to create socket");
         return false;
     }
-    ESP_LOGE(TAG, "run 5");
+    // ESP_LOGE(TAG, "run 5");
     int ret = connect(udp_fd_, (struct sockaddr *)&server_addr, sizeof(server_addr));
     if (ret < 0)
     {
@@ -225,7 +225,7 @@ bool UdpTask::udpConnect()
         udp_fd_ = -1;
         return false;
     }
-    ESP_LOGE(TAG, "run 6");
+    // ESP_LOGE(TAG, "run 6");
 
     connected_ = true;
     return true;

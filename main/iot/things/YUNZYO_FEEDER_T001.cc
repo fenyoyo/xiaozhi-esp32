@@ -1,15 +1,15 @@
 #include "iot/thing.h"
 #include "iot/miot.h"
-#include <esp_log.h>
+#include "esp_log.h"
 #include "iot/miot_device.h"
 
-#define TAG "ZHIMI_AIRP_RMA2"
+#define TAG "YUNZYO_FEEDER_T001"
 
 namespace iot
 {
-    // 米家空气净化器 4 Lite
-    // https://home.miot-spec.com/spec/zhimi.airp.rma2
-    class ZHIMI_AIRP_RMA2 : public Thing
+    // 猫特勒宠物喂食器
+    // https://home.miot-spec.com/spec/yunzyo.feeder.t001
+    class YUNZYO_FEEDER_T001 : public Thing
     {
     private:
         std::string ip_;
@@ -17,50 +17,59 @@ namespace iot
         MiotDevice miotDevice;
 
         std::map<std::string, SpecProperty> miotSpec = {
+
             {
-                "air-purifier:on",
-                {2, 1, "开关", "", kValueTypeBoolean, Permission::READ | Permission::WRITE, "setOn", "设备开关"},
+                "pet-feeder:fault",
+                {2, 1, "fault", "", kValueTypeNumber, Permission::READ, "setFault", "Device Fault"},
             },
+
+            // {
+            //     "pet-feeder:feeding-measure",
+            //     {2, 5, "feeding-measure", "", kValueTypeNumber, Permission::NONE, "setFeedingMeasure", "Feeding Measure"},
+            // },
+
+            // {
+            //     "pet-feeder:mode",
+            //     {2, 6, "mode", "", kValueTypeBoolean, Permission::READ | Permission::WRITE, "setMode", "Mode"},
+            // },
+
+            // {
+            //     "pet-feeder:feeding-type",
+            //     {2, 7, "feeding-type", "", kValueTypeNumber, Permission::NONE, "setFeedingType", "Feeding Type"},
+            // },
+
+            // {
+            //     "pet-feeder:current-time",
+            //     {2, 8, "current-time", "", kValueTypeNumber, Permission::NONE, "setCurrentTime", "Current Time"},
+            // },
+
+            // {
+            //     "pet-feeder:target-feeding-measure",
+            //     {2, 9, "target-feeding-measure", "", kValueTypeNumber, Permission::READ | Permission::WRITE, "setTargetFeedingMeasure", "Target Feeding Measure"},
+            // },
+
+            // {
+            //     "plan:plan",
+            //     {3, 1, "plan", "", kValueTypeString, Permission::READ | Permission::WRITE, "setPlan", ""},
+            // },
+
+        };
+        std::map<std::string, SpecAction> miotSpecAction = {
+
             {
-                "air-purifier:mode",
-                {2, 4, "模式:0=自动模式 1=睡眠模式 2=最爱模式", "", kValueTypeNumber, Permission::READ | Permission::WRITE, "setMode", "设置模式", "自动模式 1=睡眠模式 2=最爱模式"},
+                "pet-feeder:pet-food-out",
+                {2, 1, "PetFoodOut", "喂一份食物|出猫粮", {SpecActionParam(5, "value5", "喂食物数量:1-10,默认是1", kValueTypeNumber)}},
             },
-            {
-                "environment:relative-humidity",
-                {3, 1, "空气湿度", "", kValueTypeNumber, Permission::READ},
-            },
-            {
-                "environment:pm2.5-density",
-                {3, 4, "pm2.5", "", kValueTypeNumber, Permission::READ},
-            },
-            {
-                "environment:temperature",
-                {3, 7, "温度", "", kValueTypeNumber, Permission::READ},
-            },
-            {
-                "environment:air-quality",
-                {3, 8, "空气质量:0=优秀 1=良好 2=中等 3=差 4=严重污染 5=危险", "", kValueTypeNumber, Permission::READ},
-            },
-            {
-                "alarm:alarm",
-                {6, 1, "提示音是否打开", "", kValueTypeBoolean, Permission::READ | Permission::WRITE, "setBrightness", "设置指示灯是否开启"},
-            },
-            {
-                "screen:brightness",
-                {7, 2, "屏幕亮度:0=息屏 1=微亮 2=正常", "", kValueTypeNumber, Permission::READ | Permission::WRITE, "setBrightness", "设置屏幕亮度", "0=息屏 1=微亮 2=正常"},
-            },
-            {
-                "physical-controls-locked:physical-controls-locked",
-                {8, 1, "儿童锁", "", kValueTypeBoolean, Permission::READ | Permission::WRITE, "setPhysicalControlsLocked", "设置儿童锁"},
-            },
-            {
-                "air-purifier-favorite:fan-level",
-                {11, 1, "风力:1-14档", "", kValueTypeNumber, Permission::READ | Permission::WRITE, "setFanLevel", "设置风力", "1-14档"},
-            },
+
+            // {
+            //     "pet-feeder:weigh-manual-calibrate",
+            //     {2, 2, "WeighManualCalibrate", "Weigh Manual Calibrate", {}},
+            // },
+
         };
 
     public:
-        ZHIMI_AIRP_RMA2() : Thing("空气净化器", "")
+        YUNZYO_FEEDER_T001() : Thing("猫特勒宠物喂食器", "")
         {
             Register();
         }
@@ -108,7 +117,7 @@ namespace iot
                                            {
                                                auto value = static_cast<int8_t>(parameters["value"].boolean());
                                                miotDevice.setProperty2(miotSpec, it->first, value, true); //
-                                               miotSpec.find(it->first)->second.value = value;            //
+                                               miotSpec.find(it->first)->second.value = value;
                                            }
                                            else if (it->second.type == kValueTypeNumber)
                                            {
@@ -127,9 +136,29 @@ namespace iot
                     );
                 }
             }
+
+            for (auto it = miotSpecAction.begin(); it != miotSpecAction.end(); ++it)
+            {
+                ParameterList parameterList;
+                for (auto &&i : it->second.parameters)
+                {
+                    parameterList.AddParameter(Parameter(i.key, i.parameter_description, i.type, true));
+                }
+                methods_.AddMethod(it->second.method_name, it->second.method_description, parameterList, [this, it](const ParameterList &parameters)
+                                   {
+                                       std::map<uint8_t, int> av;
+                                       // std::map<uint_8 piid,uint_8 value> value;
+                                       for (auto &&i : it->second.parameters)
+                                       {
+                                           auto value = static_cast<int8_t>(parameters[i.key].number());
+                                           av.insert({i.piid, value});
+                                       }
+                                       miotDevice.callAction2(miotSpecAction, it->first, av); //
+                                   });
+            };
         }
     };
 
 } // namespace iot
 
-DECLARE_THING(ZHIMI_AIRP_RMA2);
+DECLARE_THING(YUNZYO_FEEDER_T001);

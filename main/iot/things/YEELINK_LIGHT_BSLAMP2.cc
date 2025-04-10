@@ -40,11 +40,11 @@ namespace iot
                                    auto value = static_cast<int8_t>(parameters["value"].number());
                                    miotDevice.send("set_bright", "[" + std::to_string(value) + "]"); //
                                });
-            // methods_.AddMethod("set_color_temperature", "设置灯的色温", ParameterList({Parameter("value", "1700-6500", kValueTypeNumber, true)}), [this](const ParameterList &parameters)
-            //                    {
-            //                        auto value = static_cast<int8_t>(parameters["value"].number());
-            //                        miotDevice.send("set_color_temperature", "[" + std::to_string(value) + "]"); //
-            //                    });
+            methods_.AddMethod("set_color_temperature", "设置灯的色温", ParameterList({Parameter("value", "1700到6500之间的整数", kValueTypeNumber, true)}), [this](const ParameterList &parameters)
+                               {
+                                   auto value = static_cast<int>(parameters["value"].number());
+                                   miotDevice.send("set_color_temperature", "[" + std::to_string(value) + "]"); //
+                               });
 
             // methods_.AddMethod("set_color", "设置灯的颜色", ParameterList({Parameter("value", "1~16777215", kValueTypeNumber, true)}), [this](const ParameterList &parameters)
             //                    {

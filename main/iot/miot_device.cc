@@ -158,18 +158,18 @@ namespace iot
 
     std::string MiotDevice::send(const std::string &command, const std::string &parameters)
     {
-        ESP_LOGI(TAG, "send ip:%s", m_ip.data());
+        // ESP_LOGI(TAG, "send ip:%s", m_ip.data());
         UdpTask *udp = new UdpTask(m_ip, m_token, command, parameters);
         udp->setCallback([this](bool success, const std::string &response)
                          {
                                if (success)
                                {
-                                    ESP_LOGI(TAG, "Received response: %s", response.c_str());
+                                    // ESP_LOGI(TAG, "Received response: %s", response.c_str());
 
                                }
                                else
                                {
-                                   ESP_LOGE(TAG, "Failed to receive response");
+                                //    ESP_LOGE(TAG, "Failed to receive response");
                                } });
         udp->start();
         return "";
