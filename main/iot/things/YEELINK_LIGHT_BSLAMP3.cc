@@ -40,6 +40,22 @@ namespace iot
                                    auto value = static_cast<int8_t>(parameters["value"].number());
                                    miotDevice.send("set_bright", "[" + std::to_string(value) + "]"); //
                                });
+
+            methods_.AddMethod("set_color_temperature", "日光模式|设置灯的色温", ParameterList({Parameter("value", "1700到6500之间的整数", kValueTypeNumber, true)}), [this](const ParameterList &parameters)
+                               {
+                                   auto value = static_cast<int>(parameters["value"].number());
+                                   miotDevice.send("set_ct_abx", "[" + std::to_string(value) + ",\"smooth\",500]"); //
+                               });
+
+            methods_.AddMethod("set_rbg", "彩光模式|设置灯的颜色", ParameterList({Parameter("r", "对应RGB中的R,0到255", kValueTypeNumber, true), Parameter("g", "对应RGB中的G,0到255", kValueTypeNumber, true), Parameter("b", "对应RGB中的B,0到255", kValueTypeNumber, true)}), [this](const ParameterList &parameters)
+                               {
+                                   auto r = parameters["r"].number();
+                                   auto g = parameters["g"].number();
+                                   auto b = parameters["b"].number();
+                                   auto rgb = (r << 16) + (g << 8) + b;
+                                   ESP_LOGI(TAG, "r:%d,g:%d,b:%d", r, g, b);
+                                   miotDevice.send("set_rgb", "[" + std::to_string(rgb) + "]"); //
+                               });
         }
 
         void initMiot(const std::string &ip, const std::string &token, const std::string &name, const uint32_t &did) override
@@ -49,6 +65,7 @@ namespace iot
             set_description(name);
             miotDevice = MiotDevice(ip_, token_, did);
             miotDevice.init();
+            getProperties();
         }
     };
 

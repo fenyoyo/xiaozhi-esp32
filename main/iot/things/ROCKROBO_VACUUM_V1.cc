@@ -94,7 +94,8 @@ namespace iot
                                });
             methods_.AddMethod("set_charge", "去充电|取消扫地|取消任务", ParameterList(), [this](const ParameterList &parameters)
                                {
-                                   miotDevice.send("app_pause", "[]");  //
+                                   miotDevice.send("app_pause", "[]"); //
+                                   vTaskDelay(500 / portTICK_PERIOD_MS);
                                    miotDevice.send("app_charge", "[]"); //
                                });
         }
