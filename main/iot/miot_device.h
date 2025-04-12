@@ -116,7 +116,9 @@ namespace iot
 
         std::string setProperty(const std::string &did, const uint8_t &siid, const uint8_t &piid,
                                 const uint8_t &value, const bool &isBool = false);
-        void setProperty2(std::map<std::string, SpecProperty> miotSpec, std::string key, const uint8_t &value, const bool &isBool = false);
+        void setProperty2(std::map<std::string, SpecProperty> miotSpec, std::string key, const int &value, const bool &isBool = false);
+        void setBleProperty(std::map<std::string, SpecProperty> miotSpec, std::string key, const int &value, const bool &isBool = false);
+        std::string createRequest(const std::string &command, const std::string &parameters);
         /**
          * 调用action
          * {"id":2,"result":{"code":0,"out":[]},"exe_time":30

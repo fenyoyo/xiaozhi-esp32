@@ -190,7 +190,7 @@ namespace iot
                 ESP_LOGE(TAG, "Failed to create thing");
                 continue;
             }
-            thing->initMiot(ip->valuestring, token->valuestring, name->valuestring, std::stoi(did->valuestring));
+            thing->initMiot(cJSON_IsNull(ip) ? "" : ip->valuestring, token->valuestring, name->valuestring, std::stoi(did->valuestring));
             // thing->set_ip(ip->valuestring);
             // thing->set_token(token->valuestring);
             AddThing(thing);

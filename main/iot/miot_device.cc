@@ -1,10 +1,10 @@
 #include "miot_device.h"
 #include "iot/miot.h"
 #include "iot/udp_task.h"
-
+#include <board.h>
 #include <esp_log.h>
 #include <cJSON.h>
-
+#include "system_info.h"
 #define TAG "MiotDevice"
 namespace iot
 {
@@ -95,7 +95,7 @@ namespace iot
         // 发送构建好的JSON请求字符串到设备，并返回设备的响应结果
         return send("set_properties", jsonStr);
     }
-    void MiotDevice::setProperty2(std::map<std::string, SpecProperty> miotSpec, std::string key, const uint8_t &value, const bool &isBool)
+    void MiotDevice::setProperty2(std::map<std::string, SpecProperty> miotSpec, std::string key, const int &value, const bool &isBool)
     {
         auto spec = miotSpec.find(key);
         if (spec == miotSpec.end())
@@ -107,6 +107,101 @@ namespace iot
         SpecProperty sp = spec->second;
         auto res = setProperty(did, sp.siid, sp.piid, value, isBool);
     }
+
+    void MiotDevice::setBleProperty(std::map<std::string, SpecProperty> miotSpec, std::string key, const int &value, const bool &isBool)
+    {
+        auto spec = miotSpec.find(key);
+        if (spec == miotSpec.end())
+        {
+            ESP_LOGE(TAG, "%s not found", key.data());
+            return;
+        }
+        std::string did = spec->first;
+        SpecProperty sp = spec->second;
+
+        auto jsonStr = "[{\"did\": \"" + did + "\",";
+        jsonStr += "\"siid\": " + std::to_string(sp.siid) + ",";
+        jsonStr += "\"piid\": " + std::to_string(sp.piid) + ",";
+        if (isBool)
+        {
+            if (value == 0)
+            {
+                jsonStr += "\"value\": false";
+            }
+            else
+            {
+                jsonStr += "\"value\": true";
+            }
+        }
+        else
+        {
+            jsonStr += "\"value\": " + std::to_string(value);
+        }
+        jsonStr += "}]";
+
+        auto request = createRequest("set_properties", jsonStr);
+        ESP_LOGI(TAG, "request is %s", request.c_str());
+        Message msg;
+        msg.header.deviceID = m_deviceId;
+        std::string mac = SystemInfo::GetMacAddress();
+        std::string build = msg.build(request, m_token);
+        ESP_LOGI(TAG, "token is %s", m_token.c_str());
+
+        std::string url = "https://xiaozhi.uyuo.me/api/v1/micloud/io";
+        // std::string url = "http://192.168.1.6:8000/api/v1/micloud/io";
+        auto &board = Board::GetInstance();
+        auto http = board.CreateHttp();
+        http->SetHeader("Content-Type", "application/json");
+        std::string method = "POST";
+        std::string devicesJsonStr;
+        auto post_data = "{\"ciphertext\": \"" + Utils::stringToHexManual(build) + "\",\"mac\": \"" + mac + "\"}";
+        // auto _post_data = Utils::stringToHexManual(post_data);
+        ESP_LOGI(TAG, "post data is %s", post_data.c_str());
+        if (!http->Open(method, url, post_data))
+        {
+            ESP_LOGE(TAG, "Failed to open HTTP connection");
+            delete http;
+
+            if (devicesJsonStr.empty())
+            {
+                ESP_LOGE(TAG, "Failed to get devices from micloud");
+                return;
+            }
+        }
+        else
+        {
+            auto response = http->GetBody();
+            ESP_LOGI(TAG, "devices response:%s", response.c_str());
+            if (response.empty())
+            {
+                ESP_LOGE(TAG, "Failed to get response from server 2");
+                http->Close();
+                delete http;
+                return;
+            }
+            devicesJsonStr = response;
+            http->Close();
+            delete http;
+        }
+
+        // auto res = setProperty(did, sp.siid, sp.piid, value, isBool);
+    }
+
+    std::string MiotDevice::createRequest(const std::string &command, const std::string &parameters)
+    {
+        std::string request = "{\"id\": " + std::to_string(1) + ", \"method\": \"" + command + "\"";
+        if (!parameters.empty())
+        {
+            request += ", \"params\": " + parameters;
+        }
+        else
+        {
+            request += ", \"params\": []";
+        }
+        request += "}";
+        return request;
+    }
+
     std::string MiotDevice::callAction(const uint8_t &siid, const uint8_t &aiid)
     {
         std::string jsonStr = "{\"did\": \"call-" + std::to_string(siid) + "-" + std::to_string(aiid) + "\",";
