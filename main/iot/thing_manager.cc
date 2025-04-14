@@ -120,7 +120,7 @@ namespace iot
         auto &wifiStation = WifiStation::GetInstance();
         auto ssid = wifiStation.GetSsid();
         std::string mac = SystemInfo::GetMacAddress();
-        // std::string url = "http://192.168.1.6:8000/api/v1/micloud/" + mac + "/iot?wifi_ssid=" + ssid;
+        // std::string url = "http://192.168.1.6:8000/api/v1/micloud/" + mac + "/iot2?wifi_ssid=" + ssid;
         std::string url = "https://xiaozhi.uyuo.me/api/v1/micloud/" + mac + "/iot?wifi_ssid=" + ssid;
         auto http = board.CreateHttp();
 
@@ -149,7 +149,7 @@ namespace iot
                 delete http;
                 return;
             }
-            settings.SetString("devices", response);
+            // settings.SetString("devices", response);
             devicesJsonStr = response;
             http->Close();
             delete http;
@@ -184,23 +184,38 @@ namespace iot
             cJSON *token = cJSON_GetObjectItem(item, "token");
             cJSON *did = cJSON_GetObjectItem(item, "did");
             std::string model_str = processString(model->valuestring);
-            auto thing = CreateThing(model_str);
-            if (thing == nullptr)
+            cJSON *miot = cJSON_GetObjectItem(item, "iot");
+            ESP_LOGI(TAG, "miot：%s", cJSON_PrintUnformatted(miot));
+            if (cJSON_IsNull(miot))
             {
-                ESP_LOGE(TAG, "Failed to create thing");
-                continue;
+                auto thing = CreateThing(model_str);
+                if (thing == nullptr)
+                {
+                    ESP_LOGE(TAG, "Failed to create thing");
+                    continue;
+                }
+                thing->initMiot(cJSON_IsNull(ip) ? "" : ip->valuestring, token->valuestring, name->valuestring, std::stoi(did->valuestring));
+                // thing->set_ip(ip->valuestring);
+                // thing->set_token(token->valuestring);
+                AddThing(thing);
             }
-            thing->initMiot(cJSON_IsNull(ip) ? "" : ip->valuestring, token->valuestring, name->valuestring, std::stoi(did->valuestring));
-            // thing->set_ip(ip->valuestring);
-            // thing->set_token(token->valuestring);
-            AddThing(thing);
+            else
+            {
+                auto thing2 = CreateThing("MIHOME");
+                // MIHOME("落地扇", "2");
+                if (thing2 == nullptr)
+                {
+                    ESP_LOGE(TAG, "Failed to create thing");
+                    continue;
+                }
+                thing2->initMiot(cJSON_IsNull(ip) ? "" : ip->valuestring, token->valuestring, name->valuestring, std::stoi(did->valuestring));
+                cJSON *p = cJSON_GetObjectItem(miot, "p");
+                thing2->registerProperty(p);
+                thing2->set_name(name->valuestring);
+                thing2->set_description(name->valuestring);
+                AddThing(thing2);
+            }
         }
-
-        // AddThing(iot::CreateThing("Fan"));
-        // for (auto &thing : things_)
-        // {
-        //     thing->initMiot();
-        // }
     }
 
 } // namespace iot
