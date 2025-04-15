@@ -106,7 +106,7 @@ bool Ota::CheckVersion()
 
     data = http->GetBody();
     delete http;
-    ESP_LOGI(TAG, "Response: %s", response.c_str());
+
     // Response: { "firmware": { "version": "1.0.0", "url": "http://" } }
     // Parse the JSON response and check if the version is newer
     // If it is, set has_new_version_ to true and store the new version and URL

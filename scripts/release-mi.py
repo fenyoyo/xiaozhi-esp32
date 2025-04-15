@@ -78,7 +78,7 @@ def release(board_type, board_config):
     if not os.path.exists(config_path):
         print(f"跳过 {board_type} 因为 config.json 不存在")
         return
-    if board_type in ["atommatrix-echo-base", "atoms3-echo-base","atoms3r-cam-m12-echo-base","atoms3r-echo-base","bread-compact-ml307","movecall-cuican-esp32s3","xingzhi-cube-0.85tft-ml307","xingzhi-cube-0.96oled-ml307","xingzhi-cube-1.54tft-ml307"]:
+    if board_type in ["atommatrix-echo-base", "atoms3-echo-base","atoms3r-cam-m12-echo-base","atoms3r-echo-base","movecall-cuican-esp32s3"]:
         print(f"跳过 {board_type} 因为不支持")
         return
 
