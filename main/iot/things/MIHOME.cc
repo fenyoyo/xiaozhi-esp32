@@ -108,26 +108,29 @@ namespace iot
                     ESP_LOGE(TAG, "pd is null");
                     continue;
                 }
-                methods_.AddMethod(mn->valuestring, d->valuestring, ParameterList({Parameter("value", pd->valuestring, static_cast<ValueType>(v->valueint), true)}), [this, did, s, p, v](const ParameterList &parameters)
-                                   {
-                                       ESP_LOGI(TAG, "id%s", ip_.c_str());
-                                       if (static_cast<ValueType>(v->valueint) == kValueTypeBoolean)
+                if ((static_cast<uint8_t>(a->valueint) & static_cast<uint8_t>(Permission::WRITE)) != 0)
+                {
+                    methods_.AddMethod(mn->valuestring, d->valuestring, ParameterList({Parameter("value", pd->valuestring, static_cast<ValueType>(v->valueint), true)}), [this, did, s, p, v](const ParameterList &parameters)
                                        {
-                                           auto value = static_cast<int>(parameters["value"].boolean());
-                                           miotDevice.setCloudProperty(did->valuestring, s->valueint, p->valueint, value, true);
-                                                                                                                                
-                                       }
-                                       else if (static_cast<ValueType>(v->valueint) == kValueTypeNumber)
-                                       {
-                                           auto value = static_cast<int>(parameters["value"].number());
-                                           miotDevice.setCloudProperty(did->valuestring, s->valueint, p->valueint, value, false);
-                                       }
-                                       else
-                                       {
-                                           auto value = static_cast<int>(parameters["value"].number());
-                                           miotDevice.setCloudProperty(did->valuestring, s->valueint, p->valueint, value, false);
+                        ESP_LOGI(TAG, "id%s", ip_.c_str());
+                        if (static_cast<ValueType>(v->valueint) == kValueTypeBoolean)
+                        {
+                            auto value = static_cast<int>(parameters["value"].boolean());
+                            miotDevice.setCloudProperty(did->valuestring, s->valueint, p->valueint, value, true);
+                                                                                                                 
+                        }
+                        else if (static_cast<ValueType>(v->valueint) == kValueTypeNumber)
+                        {
+                            auto value = static_cast<int>(parameters["value"].number());
+                            miotDevice.setCloudProperty(did->valuestring, s->valueint, p->valueint, value, false);
+                        }
+                        else
+                        {
+                            auto value = static_cast<int>(parameters["value"].number());
+                            miotDevice.setCloudProperty(did->valuestring, s->valueint, p->valueint, value, false);
 
-                                       } });
+                        } });
+                }
             }
         }
     };

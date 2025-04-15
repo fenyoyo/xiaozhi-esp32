@@ -217,7 +217,8 @@ namespace iot
         std::string build = msg.build(request, m_token);
         ESP_LOGI(TAG, "token is %s", m_token.c_str());
 
-        std::string url = "https://xiaozhi.uyuo.me/api/v1/micloud/io";
+        std::string url = std::string(CONFIG_IOT_URL) + "api/v1/micloud/io";
+        // std::string url = "https://xiaozhi.uyuo.me/api/v1/micloud/io";
         // std::string url = "http://192.168.1.6:8000/api/v1/micloud/io";
         auto &board = Board::GetInstance();
         auto http = board.CreateHttp();

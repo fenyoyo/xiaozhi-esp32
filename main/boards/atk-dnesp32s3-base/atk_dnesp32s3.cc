@@ -19,51 +19,41 @@
 LV_FONT_DECLARE(font_puhui_20_4);
 LV_FONT_DECLARE(font_awesome_20_4);
 
-class XL9555 : public I2cDevice
-{
+class XL9555 : public I2cDevice {
 public:
-    XL9555(i2c_master_bus_handle_t i2c_bus, uint8_t addr) : I2cDevice(i2c_bus, addr)
-    {
+    XL9555(i2c_master_bus_handle_t i2c_bus, uint8_t addr) : I2cDevice(i2c_bus, addr) {
         WriteReg(0x06, 0x03);
         WriteReg(0x07, 0xF0);
     }
 
-    void SetOutputState(uint8_t bit, uint8_t level)
-    {
+    void SetOutputState(uint8_t bit, uint8_t level) {
         uint16_t data;
-        if (bit < 8)
-        {
+        if (bit < 8) {
             data = ReadReg(0x02);
-        }
-        else
-        {
+        } else {
             data = ReadReg(0x03);
             bit -= 8;
         }
 
         data = (data & ~(1 << bit)) | (level << bit);
 
-        if (bit < 8)
-        {
+        if (bit < 8) {
             WriteReg(0x02, data);
-        }
-        else
-        {
+        } else {
             WriteReg(0x03, data);
         }
     }
 };
 
-class atk_dnesp32s3 : public WifiBoard
-{
+
+class atk_dnesp32s3 : public WifiBoard {
 private:
     i2c_master_bus_handle_t i2c_bus_;
     Button boot_button_;
-    LcdDisplay *display_;
-    XL9555 *xl9555_;
+    LcdDisplay* display_;
+    XL9555* xl9555_;
 
-    void InitializeI2c()
-    {
+    void InitializeI2c() {
         // Initialize I2C peripheral
         i2c_master_bus_config_t i2c_bus_cfg = {
             .i2c_port = (i2c_port_t)I2C_NUM_0,
@@ -84,8 +74,7 @@ private:
     }
 
     // Initialize spi peripheral
-    void InitializeSpi()
-    {
+    void InitializeSpi() {
         spi_bus_config_t buscfg = {};
         buscfg.mosi_io_num = LCD_MOSI_PIN;
         buscfg.miso_io_num = GPIO_NUM_NC;
@@ -96,22 +85,17 @@ private:
         ESP_ERROR_CHECK(spi_bus_initialize(SPI2_HOST, &buscfg, SPI_DMA_CH_AUTO));
     }
 
-    void InitializeButtons()
-    {
-        boot_button_.OnClick([this]()
-                             {
+    void InitializeButtons() {
+        boot_button_.OnClick([this]() {
             auto& app = Application::GetInstance();
             if (app.GetDeviceState() == kDeviceStateStarting && !WifiStation::GetInstance().IsConnected()) {
                 ResetWifiConfiguration();
-            } });
-        boot_button_.OnPressDown([this]()
-                                 { Application::GetInstance().StartListening(); });
-        boot_button_.OnPressUp([this]()
-                               { Application::GetInstance().StopListening(); });
+            }
+            app.ToggleChatState();
+        });
     }
 
-    void InitializeSt7789Display()
-    {
+    void InitializeSt7789Display() {
         esp_lcd_panel_io_handle_t panel_io = nullptr;
         esp_lcd_panel_handle_t panel = nullptr;
         ESP_LOGD(TAG, "Install panel IO");
@@ -134,39 +118,37 @@ private:
         panel_config.bits_per_pixel = 16;
         panel_config.data_endian = LCD_RGB_DATA_ENDIAN_BIG,
         esp_lcd_new_panel_st7789(panel_io, &panel_config, &panel);
-
+        
         esp_lcd_panel_reset(panel);
         xl9555_->SetOutputState(8, 1);
         xl9555_->SetOutputState(2, 0);
 
         esp_lcd_panel_init(panel);
         esp_lcd_panel_invert_color(panel, DISPLAY_BACKLIGHT_OUTPUT_INVERT);
-        esp_lcd_panel_swap_xy(panel, DISPLAY_SWAP_XY);
+        esp_lcd_panel_swap_xy(panel, DISPLAY_SWAP_XY); 
         esp_lcd_panel_mirror(panel, DISPLAY_MIRROR_X, DISPLAY_MIRROR_Y);
         display_ = new SpiLcdDisplay(panel_io, panel,
-                                     DISPLAY_WIDTH, DISPLAY_HEIGHT, DISPLAY_OFFSET_X, DISPLAY_OFFSET_Y, DISPLAY_MIRROR_X, DISPLAY_MIRROR_Y, DISPLAY_SWAP_XY,
-                                     {
-                                         .text_font = &font_puhui_20_4,
-                                         .icon_font = &font_awesome_20_4,
-#if CONFIG_USE_WECHAT_MESSAGE_STYLE
-                                         .emoji_font = font_emoji_32_init(),
-#else
-                                         .emoji_font = DISPLAY_HEIGHT >= 240 ? font_emoji_64_init() : font_emoji_32_init(),
-#endif
-                                     });
+                                    DISPLAY_WIDTH, DISPLAY_HEIGHT, DISPLAY_OFFSET_X, DISPLAY_OFFSET_Y, DISPLAY_MIRROR_X, DISPLAY_MIRROR_Y, DISPLAY_SWAP_XY,
+                                    {
+                                        .text_font = &font_puhui_20_4,
+                                        .icon_font = &font_awesome_20_4,
+                                        #if CONFIG_USE_WECHAT_MESSAGE_STYLE
+                                            .emoji_font = font_emoji_32_init(),
+                                        #else
+                                            .emoji_font = DISPLAY_HEIGHT >= 240 ? font_emoji_64_init() : font_emoji_32_init(),
+                                        #endif
+                                    });
     }
 
-    // 物联网初始化，添加对 AI 可见设备
-    void InitializeIot()
-    {
-        auto &thing_manager = iot::ThingManager::GetInstance();
+    // 物联网初始化，添加对 AI 可见设备 
+    void InitializeIot() {
+        auto& thing_manager = iot::ThingManager::GetInstance();
         thing_manager.AddThing(iot::CreateThing("Speaker"));
         thing_manager.AddThing(iot::CreateThing("Screen"));
     }
 
 public:
-    atk_dnesp32s3() : boot_button_(BOOT_BUTTON_GPIO)
-    {
+    atk_dnesp32s3() : boot_button_(BOOT_BUTTON_GPIO) {
         InitializeI2c();
         InitializeSpi();
         InitializeSt7789Display();
@@ -174,31 +156,29 @@ public:
         InitializeIot();
     }
 
-    virtual Led *GetLed() override
-    {
+    virtual Led* GetLed() override {
         static SingleLed led(BUILTIN_LED_GPIO);
         return &led;
     }
 
-    virtual AudioCodec *GetAudioCodec() override
-    {
+    virtual AudioCodec* GetAudioCodec() override {
         static Es8388AudioCodec audio_codec(
-            i2c_bus_,
-            I2C_NUM_0,
-            AUDIO_INPUT_SAMPLE_RATE,
+            i2c_bus_, 
+            I2C_NUM_0, 
+            AUDIO_INPUT_SAMPLE_RATE, 
             AUDIO_OUTPUT_SAMPLE_RATE,
-            AUDIO_I2S_GPIO_MCLK,
-            AUDIO_I2S_GPIO_BCLK,
-            AUDIO_I2S_GPIO_WS,
-            AUDIO_I2S_GPIO_DOUT,
+            AUDIO_I2S_GPIO_MCLK, 
+            AUDIO_I2S_GPIO_BCLK, 
+            AUDIO_I2S_GPIO_WS, 
+            AUDIO_I2S_GPIO_DOUT, 
             AUDIO_I2S_GPIO_DIN,
-            GPIO_NUM_NC,
-            AUDIO_CODEC_ES8388_ADDR);
+            GPIO_NUM_NC, 
+            AUDIO_CODEC_ES8388_ADDR
+        );
         return &audio_codec;
     }
 
-    virtual Display *GetDisplay() override
-    {
+    virtual Display* GetDisplay() override {
         return display_;
     }
 };

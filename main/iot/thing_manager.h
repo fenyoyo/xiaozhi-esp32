@@ -9,6 +9,7 @@
 #include <memory>
 #include <functional>
 #include <map>
+#include "sdkconfig.h"
 
 namespace iot
 {
