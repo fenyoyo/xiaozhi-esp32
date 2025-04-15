@@ -203,7 +203,6 @@ namespace iot
             else
             {
                 auto thing2 = CreateThing("MIHOME");
-                // MIHOME("落地扇", "2");
                 if (thing2 == nullptr)
                 {
                     ESP_LOGE(TAG, "Failed to create thing");
