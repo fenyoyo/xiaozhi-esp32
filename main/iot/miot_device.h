@@ -128,6 +128,8 @@ namespace iot
         std::string callAction2(std::map<std::string, SpecAction> miotSpec, std::string key, std::map<uint8_t, int> av);
 
         std::string send(const std::string &command, const std::string &parameters);
+        void sendCloud(const std::string &jsonStr);
+        void sendCloud2(const std::string &jsonStr);
         /**
          * 解析获取属性的函数 {"id":2,"result":[{"did":"fan:on","siid":2,"piid":1,"code":0,"value":true}],"exe_time":60}
          */

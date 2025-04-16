@@ -140,12 +140,12 @@ namespace iot
         jsonStr += "}]";
 
         auto request = createRequest("set_properties", jsonStr);
-        ESP_LOGI(TAG, "request is %s", request.c_str());
+        // ESP_LOGI(TAG, "request is %s", request.c_str());
         Message msg;
         msg.header.deviceID = m_deviceId;
         std::string mac = SystemInfo::GetMacAddress();
         std::string build = msg.build(request, m_token);
-        ESP_LOGI(TAG, "token is %s", m_token.c_str());
+        // ESP_LOGI(TAG, "token is %s", m_token.c_str());
 
         std::string url = "https://xiaozhi.uyuo.me/api/v1/micloud/io";
         // std::string url = "http://192.168.1.6:8000/api/v1/micloud/io";
@@ -156,7 +156,7 @@ namespace iot
         std::string devicesJsonStr;
         auto post_data = "{\"ciphertext\": \"" + Utils::stringToHexManual(build) + "\",\"mac\": \"" + mac + "\"}";
         // auto _post_data = Utils::stringToHexManual(post_data);
-        ESP_LOGI(TAG, "post data is %s", post_data.c_str());
+        // ESP_LOGI(TAG, "post data is %s", post_data.c_str());
         if (!http->Open(method, url, post_data))
         {
             ESP_LOGE(TAG, "Failed to open HTTP connection");
@@ -171,7 +171,7 @@ namespace iot
         else
         {
             auto response = http->GetBody();
-            ESP_LOGI(TAG, "devices response:%s", response.c_str());
+            // ESP_LOGI(TAG, "devices response:%s", response.c_str());
             if (response.empty())
             {
                 ESP_LOGE(TAG, "Failed to get response from server 2");
@@ -209,6 +209,12 @@ namespace iot
         }
         jsonStr += "}]";
 
+        sendCloud(jsonStr);
+        // sendCloud(jsonStr);
+    }
+
+    void MiotDevice::sendCloud(const std::string &jsonStr)
+    {
         auto request = createRequest("set_properties", jsonStr);
         ESP_LOGI(TAG, "request is %s", request.c_str());
         Message msg;
@@ -256,6 +262,54 @@ namespace iot
         }
     }
 
+    void MiotDevice::sendCloud2(const std::string &jsonStr)
+    {
+        auto request = createRequest("action", jsonStr);
+        ESP_LOGI(TAG, "request is %s", request.c_str());
+        Message msg;
+        msg.header.deviceID = m_deviceId;
+        std::string mac = SystemInfo::GetMacAddress();
+        std::string build = msg.build(request, m_token);
+        ESP_LOGI(TAG, "token is %s", m_token.c_str());
+
+        std::string url = std::string(CONFIG_IOT_URL) + "api/v1/micloud/io2";
+        // std::string url = "https://xiaozhi.uyuo.me/api/v1/micloud/io";
+        // std::string url = "http://192.168.1.6:8000/api/v1/micloud/io";
+        auto &board = Board::GetInstance();
+        auto http = board.CreateHttp();
+        http->SetHeader("Content-Type", "application/json");
+        std::string method = "POST";
+        std::string devicesJsonStr;
+        auto post_data = "{\"ciphertext\": \"" + Utils::stringToHexManual(build) + "\",\"mac\": \"" + mac + "\"}";
+        // auto _post_data = Utils::stringToHexManual(post_data);
+        ESP_LOGI(TAG, "post data is %s", post_data.c_str());
+        if (!http->Open(method, url, post_data))
+        {
+            ESP_LOGE(TAG, "Failed to open HTTP connection");
+            delete http;
+
+            if (devicesJsonStr.empty())
+            {
+                ESP_LOGE(TAG, "Failed to get devices from micloud");
+                return;
+            }
+        }
+        else
+        {
+            auto response = http->GetBody();
+            ESP_LOGI(TAG, "devices response:%s", response.c_str());
+            if (response.empty())
+            {
+                ESP_LOGE(TAG, "Failed to get response from server 2");
+                http->Close();
+                delete http;
+                return;
+            }
+            devicesJsonStr = response;
+            http->Close();
+            delete http;
+        }
+    }
     std::string MiotDevice::createRequest(const std::string &command, const std::string &parameters)
     {
         std::string request = "{\"id\": " + std::to_string(1) + ", \"method\": \"" + command + "\"";
@@ -281,7 +335,7 @@ namespace iot
         {
             // {\"piid\": " + std::to_string(piid) + ", \"value\": " + std::to_string(value) + "}
             jsonStr += "{\"piid\": " + std::to_string(a->first) + ", \"value\": " + std::to_string(a->second) + "}";
-            if (av.end() != a)
+            if (std::next(a) != av.end()) // 检查下一个元素是否是end
             {
                 jsonStr += ",";
             }
@@ -289,9 +343,9 @@ namespace iot
 
         jsonStr += "]";
         jsonStr += "}";
-
-        ESP_LOGI(TAG, "callAction2 jsonStr:%s", jsonStr.c_str());
-
+        // {"did": "call-2-5","siid": 2,"aiid": 5,"in": [{"piid": 5, "value": 1},]}
+        // ESP_LOGI(TAG, "callAction2 jsonStr:%s", jsonStr.c_str());
+        sendCloud2(jsonStr);
         return "";
     }
     //{"id": 2, "method": "action", "params": {"did": "call-2-1", "siid": 2, "aiid": 1, "in": [{"piid": 5, "value": 1}]}}
@@ -330,7 +384,7 @@ namespace iot
 
         jsonStr += "]";
         jsonStr += "}";
-        ESP_LOGI(TAG, "callAction2 jsonStr:%s", jsonStr.c_str());
+        // ESP_LOGI(TAG, "callAction2 jsonStr:%s", jsonStr.c_str());
         return send("action", jsonStr);
         return std::string();
     };

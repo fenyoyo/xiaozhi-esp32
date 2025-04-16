@@ -32,7 +32,7 @@ namespace iot
             // set_name(token);
             miotDevice = MiotDevice(ip_, token_, did);
             miotDevice.init();
-            ESP_LOGI(TAG, "设备：%s", name.c_str());
+            // ESP_LOGI(TAG, "设备：%s", name.c_str());
         }
 
         void registerProperty(const cJSON *iot) override
@@ -112,7 +112,7 @@ namespace iot
                 {
                     methods_.AddMethod(mn->valuestring, d->valuestring, ParameterList({Parameter("value", pd->valuestring, static_cast<ValueType>(v->valueint), true)}), [this, did, s, p, v](const ParameterList &parameters)
                                        {
-                        ESP_LOGI(TAG, "id%s", ip_.c_str());
+                        // ESP_LOGI(TAG, "id%s", ip_.c_str());
                         if (static_cast<ValueType>(v->valueint) == kValueTypeBoolean)
                         {
                             auto value = static_cast<int>(parameters["value"].boolean());
@@ -224,8 +224,9 @@ namespace iot
                 }
                 methods_.AddMethod(mn->valuestring, md->valuestring, parameterList, [this, s, a, p](const ParameterList &parameters)
                                    {
+                                       // callAction2 jsonStr:{"did": "call-2-5","siid": 2,"aiid": 5,"in": [{"piid": 5, "value": 1},]}
                                        std::map<int, int> av;
-                                       // std::map<uint_8 piid,uint_8 value> value;
+
                                        auto p_size = cJSON_GetArraySize(p);
                                        for (size_t i = 0; i < p_size; i++)
                                        {
@@ -241,8 +242,7 @@ namespace iot
                                        //        auto value = static_cast<int8_t>(parameters[i.key].number());
                                        //        av.insert({i.piid, value});
                                        //    }
-                                       miotDevice.callAction(s->valueint, a->valueint, av); //
-                                   });
+                                       miotDevice.callAction(s->valueint, a->valueint, av); });
             }
             // ParameterList parameterList;
             // for (auto &&i : it->second.parameters)

@@ -142,7 +142,7 @@ namespace iot
         else
         {
             auto response = http->GetBody();
-            ESP_LOGI(TAG, "devices response:%s", response.c_str());
+            // ESP_LOGI(TAG, "devices response:%s", response.c_str());
             if (response.empty())
             {
                 ESP_LOGE(TAG, "Failed to get response from server 2");
@@ -186,7 +186,7 @@ namespace iot
             cJSON *did = cJSON_GetObjectItem(item, "did");
             std::string model_str = processString(model->valuestring);
             cJSON *miot = cJSON_GetObjectItem(item, "iot");
-            ESP_LOGI(TAG, "miot：%s", cJSON_PrintUnformatted(miot));
+            // ESP_LOGI(TAG, "miot：%s", cJSON_PrintUnformatted(miot));
             if (cJSON_IsNull(miot))
             {
                 auto thing = CreateThing(model_str);
