@@ -210,7 +210,9 @@ namespace iot
                 }
                 thing2->initMiot(cJSON_IsNull(ip) ? "" : ip->valuestring, token->valuestring, name->valuestring, std::stoi(did->valuestring));
                 cJSON *p = cJSON_GetObjectItem(miot, "p");
+                cJSON *a = cJSON_GetObjectItem(miot, "a");
                 thing2->registerProperty(p);
+                thing2->registerAction(a);
                 thing2->set_name(name->valuestring);
                 thing2->set_description(name->valuestring);
                 AddThing(thing2);

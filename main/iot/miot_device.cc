@@ -271,25 +271,40 @@ namespace iot
         return request;
     }
 
-    std::string MiotDevice::callAction(const uint8_t &siid, const uint8_t &aiid)
+    std::string MiotDevice::callAction(const uint8_t &siid, const uint8_t &aiid, std::map<int, int> av)
     {
         std::string jsonStr = "{\"did\": \"call-" + std::to_string(siid) + "-" + std::to_string(aiid) + "\",";
         jsonStr += "\"siid\": " + std::to_string(siid) + ",";
         jsonStr += "\"aiid\": " + std::to_string(aiid) + ",";
-        jsonStr += "\"in\": []";
+        jsonStr += "\"in\": [";
+        for (auto a = av.begin(); a != av.end(); a++)
+        {
+            // {\"piid\": " + std::to_string(piid) + ", \"value\": " + std::to_string(value) + "}
+            jsonStr += "{\"piid\": " + std::to_string(a->first) + ", \"value\": " + std::to_string(a->second) + "}";
+            if (av.end() != a)
+            {
+                jsonStr += ",";
+            }
+        };
+
+        jsonStr += "]";
         jsonStr += "}";
-        return send("action", jsonStr);
+
+        ESP_LOGI(TAG, "callAction2 jsonStr:%s", jsonStr.c_str());
+
+        return "";
     }
     //{"id": 2, "method": "action", "params": {"did": "call-2-1", "siid": 2, "aiid": 1, "in": [{"piid": 5, "value": 1}]}}
-    std::string MiotDevice::callAction(const uint8_t &siid, const uint8_t &aiid, const uint8_t &piid, const uint8_t &value)
-    {
-        std::string jsonStr = "{\"did\": \"call-" + std::to_string(siid) + "-" + std::to_string(piid) + "\",";
-        jsonStr += "\"siid\": " + std::to_string(siid) + ",";
-        jsonStr += "\"aiid\": " + std::to_string(aiid) + ",";
-        jsonStr += "\"in\": [{\"piid\": " + std::to_string(piid) + ", \"value\": " + std::to_string(value) + "}]";
-        jsonStr += "}";
-        return send("action", jsonStr);
-    }
+    // std::string MiotDevice::callAction(const uint8_t &siid, const uint8_t &aiid, const uint8_t &piid, const uint8_t &value)
+    // {
+    //     std::string jsonStr = "{\"did\": \"call-" + std::to_string(siid) + "-" + std::to_string(piid) + "\",";
+    //     jsonStr += "\"siid\": " + std::to_string(siid) + ",";
+    //     jsonStr += "\"aiid\": " + std::to_string(aiid) + ",";
+    //     jsonStr += "\"in\": [{\"piid\": " + std::to_string(piid) + ", \"value\": " + std::to_string(value) + "}]";
+    //     jsonStr += "}";
+
+    //     return send("action", jsonStr);
+    // }
     std::string MiotDevice::callAction2(std::map<std::string, SpecAction> miotSpec, std::string key, std::map<uint8_t, int> av)
     {
         auto spec = miotSpec.find(key);

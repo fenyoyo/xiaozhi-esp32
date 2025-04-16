@@ -96,6 +96,9 @@ namespace iot
     void Thing::registerProperty(const cJSON *iot)
     {
     }
+    void Thing::registerAction(const cJSON *iot)
+    {
+    }
     void Thing::getProperties()
     {
     }

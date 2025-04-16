@@ -133,6 +133,134 @@ namespace iot
                 }
             }
         }
+
+        void registerAction(const cJSON *iot) override
+        {
+            if (iot == nullptr)
+            {
+                ESP_LOGE(TAG, "iot is null");
+                return;
+            }
+            int size = cJSON_GetArraySize(iot);
+            for (int ii = 0; ii < size; ii++)
+            {
+                cJSON *item = cJSON_GetArrayItem(iot, ii);
+                if (item == nullptr)
+                {
+                    ESP_LOGE(TAG, "item is null");
+                    continue;
+                }
+                cJSON *did = cJSON_GetObjectItem(item, "did");
+                if (did == nullptr)
+                {
+                    ESP_LOGE(TAG, "did is null");
+                    continue;
+                }
+                cJSON *s = cJSON_GetObjectItem(item, "s");
+                if (s == nullptr)
+                {
+                    ESP_LOGE(TAG, "s is null");
+                    continue;
+                }
+                cJSON *a = cJSON_GetObjectItem(item, "a");
+                if (a == nullptr)
+                {
+                    ESP_LOGE(TAG, "a is null");
+                    continue;
+                }
+                cJSON *mn = cJSON_GetObjectItem(item, "mn");
+                if (mn == nullptr)
+                {
+                    ESP_LOGE(TAG, "mn is null");
+                    continue;
+                }
+                cJSON *md = cJSON_GetObjectItem(item, "md");
+                if (md == nullptr)
+                {
+                    ESP_LOGE(TAG, "md is null");
+                    continue;
+                }
+                cJSON *p = cJSON_GetObjectItem(item, "p");
+                if (p == nullptr)
+                {
+                    ESP_LOGE(TAG, "p is null");
+                    continue;
+                }
+                int p_size = cJSON_GetArraySize(p);
+                ParameterList parameterList;
+
+                if (p_size > 0)
+                {
+                    for (int i = 0; i < p_size; i++)
+                    {
+                        cJSON *param = cJSON_GetArrayItem(p, i);
+                        if (param == nullptr)
+                        {
+                            ESP_LOGE(TAG, "param is null");
+                            continue;
+                        }
+                        cJSON *piid = cJSON_GetObjectItem(param, "piid");
+                        if (piid == nullptr)
+                        {
+                            ESP_LOGE(TAG, "piid is null");
+                            continue;
+                        }
+                        cJSON *name = cJSON_GetObjectItem(param, "name");
+                        if (name == nullptr)
+                        {
+                            ESP_LOGE(TAG, "name is null");
+                            continue;
+                        }
+                        cJSON *description = cJSON_GetObjectItem(param, "description");
+                        if (description == nullptr)
+                        {
+                            ESP_LOGE(TAG, "description is null");
+                            continue;
+                        }
+                        parameterList.AddParameter(Parameter(std::to_string(piid->valueint), description->valuestring, kValueTypeNumber, true));
+                        // SpecActionParam param = {siid->valueint, piid->valueint};
+                        // miotSpecAction[mn->valuestring].parameters.push_back(param);
+                    }
+                }
+                methods_.AddMethod(mn->valuestring, md->valuestring, parameterList, [this, s, a, p](const ParameterList &parameters)
+                                   {
+                                       std::map<int, int> av;
+                                       // std::map<uint_8 piid,uint_8 value> value;
+                                       auto p_size = cJSON_GetArraySize(p);
+                                       for (size_t i = 0; i < p_size; i++)
+                                       {
+                                           cJSON *param = cJSON_GetArrayItem(p, i);
+                                           cJSON *piid = cJSON_GetObjectItem(param, "piid");
+                                           auto key = std::to_string(piid->valueint);
+                                           auto value = static_cast<int8_t>(parameters[key].number());
+                                           av.insert({piid->valueint, value});
+                                       }
+
+                                       //    for (auto &&i : it->second.parameters)
+                                       //    {
+                                       //        auto value = static_cast<int8_t>(parameters[i.key].number());
+                                       //        av.insert({i.piid, value});
+                                       //    }
+                                       miotDevice.callAction(s->valueint, a->valueint, av); //
+                                   });
+            }
+            // ParameterList parameterList;
+            // for (auto &&i : it->second.parameters)
+            // {
+            //     parameterList.AddParameter(Parameter(i.key, i.parameter_description, i.type, true));
+            // }
+            // methods_.AddMethod(it->second.method_name, it->second.method_description, parameterList, [this, it](const ParameterList &parameters)
+            //                    {
+            //                        std::map<uint8_t, int> av;
+            //                        // std::map<uint_8 piid,uint_8 value> value;
+            //                        for (auto &&i : it->second.parameters)
+            //                        {
+            //                            auto value = static_cast<int8_t>(parameters[i.key].number());
+            //                            av.insert({i.piid, value});
+            //                        }
+            //                        miotDevice.callAction2(miotSpecAction, it->first, av); //
+            //                    });
+        }
     };
 
 } // namespace iot
