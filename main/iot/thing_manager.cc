@@ -112,16 +112,9 @@ namespace iot
         // 发送广播，查看在线设备
         // TODO:经常性获取失败，需要重试
         auto &board = Board::GetInstance();
-        if (board.GetBoardType() != "wifi")
-        {
-            // 如果不是wifi模式，则不执行iot
-            return;
-        }
-        auto &wifiStation = WifiStation::GetInstance();
-        auto ssid = wifiStation.GetSsid();
         std::string mac = SystemInfo::GetMacAddress();
 
-        std::string url = std::string(CONFIG_IOT_URL) + "api/v1/micloud/" + mac + "/iot2?wifi_ssid=" + ssid;
+        std::string url = std::string(CONFIG_IOT_URL) + "api/v1/micloud/" + mac + "/iot2";
         // std::string url = "https://xiaozhi.uyuo.me/api/v1/micloud/" + mac + "/iot?wifi_ssid=" + ssid;
         auto http = board.CreateHttp();
 
@@ -142,7 +135,7 @@ namespace iot
         else
         {
             auto response = http->GetBody();
-            // ESP_LOGI(TAG, "devices response:%s", response.c_str());
+            ESP_LOGI(TAG, "devices response:%s", response.c_str());
             if (response.empty())
             {
                 ESP_LOGE(TAG, "Failed to get response from server 2");
@@ -180,6 +173,7 @@ namespace iot
         {
             cJSON *item = cJSON_GetArrayItem(list, i);
             cJSON *name = cJSON_GetObjectItem(item, "name");
+            cJSON *title = cJSON_GetObjectItem(item, "title");
             cJSON *model = cJSON_GetObjectItem(item, "model");
             cJSON *ip = cJSON_GetObjectItem(item, "localip");
             cJSON *token = cJSON_GetObjectItem(item, "token");
@@ -213,8 +207,18 @@ namespace iot
                 cJSON *a = cJSON_GetObjectItem(miot, "a");
                 thing2->registerProperty(p);
                 thing2->registerAction(a);
-                thing2->set_name(name->valuestring);
-                thing2->set_description(name->valuestring);
+                if (cJSON_IsNull(title))
+                {
+                    thing2->set_name(name->valuestring);
+                    thing2->set_description(name->valuestring);
+                }
+                else
+                {
+                    thing2->set_name(name->valuestring);
+                    thing2->set_description(title->valuestring);
+                }
+                // thing2->set_name(name->valuestring);
+                // thing2->set_description(name->valuestring);
                 AddThing(thing2);
             }
         }

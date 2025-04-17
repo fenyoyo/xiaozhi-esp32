@@ -20,7 +20,7 @@ namespace iot
         std::map<std::string, SpecAction> miotSpecAction = {};
 
     public:
-        MIHOME() : Thing("落地扇", "")
+        MIHOME() : Thing("设备", "")
         {
         }
 
@@ -218,8 +218,6 @@ namespace iot
                             continue;
                         }
                         parameterList.AddParameter(Parameter(std::to_string(piid->valueint), description->valuestring, kValueTypeNumber, true));
-                        // SpecActionParam param = {siid->valueint, piid->valueint};
-                        // miotSpecAction[mn->valuestring].parameters.push_back(param);
                     }
                 }
                 methods_.AddMethod(mn->valuestring, md->valuestring, parameterList, [this, s, a, p](const ParameterList &parameters)
@@ -236,30 +234,8 @@ namespace iot
                                            auto value = static_cast<int8_t>(parameters[key].number());
                                            av.insert({piid->valueint, value});
                                        }
-
-                                       //    for (auto &&i : it->second.parameters)
-                                       //    {
-                                       //        auto value = static_cast<int8_t>(parameters[i.key].number());
-                                       //        av.insert({i.piid, value});
-                                       //    }
                                        miotDevice.callAction(s->valueint, a->valueint, av); });
             }
-            // ParameterList parameterList;
-            // for (auto &&i : it->second.parameters)
-            // {
-            //     parameterList.AddParameter(Parameter(i.key, i.parameter_description, i.type, true));
-            // }
-            // methods_.AddMethod(it->second.method_name, it->second.method_description, parameterList, [this, it](const ParameterList &parameters)
-            //                    {
-            //                        std::map<uint8_t, int> av;
-            //                        // std::map<uint_8 piid,uint_8 value> value;
-            //                        for (auto &&i : it->second.parameters)
-            //                        {
-            //                            auto value = static_cast<int8_t>(parameters[i.key].number());
-            //                            av.insert({i.piid, value});
-            //                        }
-            //                        miotDevice.callAction2(miotSpecAction, it->first, av); //
-            //                    });
         }
     };
 
