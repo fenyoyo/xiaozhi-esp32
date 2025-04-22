@@ -416,7 +416,6 @@ void Application::Start()
 
     // Check for new firmware version or get the MQTT broker address
     CheckNewVersion();
-    MiHome();
 
     // Initialize the protocol
     display->SetStatus(Lang::Strings::LOADING_PROTOCOL);
@@ -598,6 +597,7 @@ void Application::Start()
             } }); });
     wake_word_detect_.StartDetection();
 #endif
+    MiHome();
 
     // Wait for the new version check to finish
     xEventGroupWaitBits(event_group_, CHECK_NEW_VERSION_DONE_EVENT, pdTRUE, pdFALSE, portMAX_DELAY);
@@ -1035,12 +1035,22 @@ bool Application::CanEnterSleepMode()
 
 void Application::MiHome()
 {
-    xTaskCreate([](void *arg)
-                {
-        auto& thing_manager = iot::ThingManager::GetInstance();
-        // thing_manager.AddThing(iot::CreateThing("Fan"));
+    // xTaskCreate([](void *arg)
+    //             {
+    //     auto& thing_manager = iot::ThingManager::GetInstance();
+    //     // thing_manager.AddThing(iot::CreateThing("Fan"));
+    //     thing_manager.InitMoit();
+    //     // Application* app = (Application*)arg;
+    //     // app->CheckNewVersion();
+    //     vTaskDelete(NULL); }, "get_miot_info", 4096 * 2, this, 1, nullptr);
+    while (true)
+    {
+        SetDeviceState(kDeviceStateActivating);
+        auto display = Board::GetInstance().GetDisplay();
+        display->SetStatus("初始化米家");
+        auto &thing_manager = iot::ThingManager::GetInstance();
         thing_manager.InitMoit();
-        // Application* app = (Application*)arg;
-        // app->CheckNewVersion();
-        vTaskDelete(NULL); }, "get_miot_info", 4096 * 2, this, 1, nullptr);
+        display->SetStatus("初始化完成");
+        break;
+    }
 }

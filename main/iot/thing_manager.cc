@@ -52,6 +52,7 @@ namespace iot
             json.pop_back();
         }
         json += "]";
+        ESP_LOGI(TAG, "json:%s", json.c_str());
         return changed;
     }
 
@@ -79,7 +80,7 @@ namespace iot
             json_str.pop_back();
         }
         json_str += "]";
-        ESP_LOGI(TAG, "json_str:%s", json_str.c_str());
+        // ESP_LOGI(TAG, "json_str:%s", json_str.c_str());
         return json_str;
     }
 
@@ -107,14 +108,10 @@ namespace iot
 
     void ThingManager::InitMoit()
     {
-        // return;
-        // 请求网络，获取micloud的设备列表
-        // 发送广播，查看在线设备
-        // TODO:经常性获取失败，需要重试
         auto &board = Board::GetInstance();
         std::string mac = SystemInfo::GetMacAddress();
 
-        std::string url = std::string(CONFIG_IOT_URL) + "api/v1/micloud/" + mac + "/iot2";
+        std::string url = std::string(CONFIG_IOT_URL) + "api/v1/micloud/" + mac + "/iot2?wifi_ssid=cmd";
         // std::string url = "https://xiaozhi.uyuo.me/api/v1/micloud/" + mac + "/iot?wifi_ssid=" + ssid;
         auto http = board.CreateHttp();
 
@@ -135,7 +132,7 @@ namespace iot
         else
         {
             auto response = http->GetBody();
-            ESP_LOGI(TAG, "devices response:%s", response.c_str());
+            // ESP_LOGI(TAG, "devices response:%s", response.c_str());
             if (response.empty())
             {
                 ESP_LOGE(TAG, "Failed to get response from server 2");

@@ -7,8 +7,6 @@
 
 namespace iot
 {
-    // 米家智能插座3
-    // https://home.miot-spec.com/spec/cuco.plug.v3
     class MIHOME : public Thing
     {
     private:
@@ -16,8 +14,9 @@ namespace iot
         std::string token_;
         MiotDevice miotDevice;
 
-        std::map<std::string, SpecProperty> miotSpec = {};
-        std::map<std::string, SpecAction> miotSpecAction = {};
+        // std::map<std::string, SpecProperty> miotSpec = {};
+        // std::map<std::string, SpecAction> miotSpecAction = {};
+        std::map<std::string, cJSON *> miotSpec = {};
 
     public:
         MIHOME() : Thing("设备", "")
@@ -32,7 +31,105 @@ namespace iot
             // set_name(token);
             miotDevice = MiotDevice(ip_, token_, did);
             miotDevice.init();
-            // ESP_LOGI(TAG, "设备：%s", name.c_str());
+            miotDevice.setCallback([this](const std::string &data)
+                                   {
+                                    // {"code":0,"msg":"Success","data":[{"did":"682588579","iid":"0.2.1","siid":2,"piid":1,"value":true,"code":0,"updateTime":1745186665,"exe_time":0},{"did":"682588579","iid":"0.2.2","siid":2,"piid":2,"value":0,"code":0,"updateTime":1745178312,"exe_time":0},{"did":"682588579","iid":"0.2.4","siid":2,"piid":4,"value":0,"code":0,"updateTime":1745178313,"exe_time":0},{"did":"682588579","iid":"0.3.1","siid":3,"piid":1,"value":64,"code":0,"updateTime":1745186634,"exe_time":0},{"did":"682588579","iid":"0.3.4","siid":3,"piid":4,"value":13,"code":0,"updateTime":1745186488,"exe_time":0},{"did":"682588579","iid":"0.3.7","siid":3,"piid":7,"value":29,"code":0,"updateTime":1745186126,"exe_time":0},{"did":"682588579","iid":"0.3.8","siid":3,"piid":8,"value":0,"code":0,"updateTime":1745178316,"exe_time":0}]}
+                                    //    ESP_LOGI(TAG, "云端返回：%s", data.c_str());
+                                       // TODO 解析数据
+                                    //    for (auto &item : miotSpec)
+                                    //    {
+                                    //         ESP_LOGI(TAG, "key:%s", item.first.c_str());
+                                    //    }
+                                       cJSON *json = cJSON_Parse(data.c_str());
+                                       if (json == nullptr)
+                                       {
+                                           ESP_LOGE(TAG, "json is null");
+                                           return;
+                                       }
+                                        cJSON *dataJson = cJSON_GetObjectItem(json, "data");
+                                        cJSON *code = cJSON_GetObjectItem(json, "code");
+                                        if (code == nullptr || code->valueint != 0)
+                                        {
+                                            ESP_LOGE(TAG, "code is null or not 0");
+                                            cJSON_Delete(json);
+                                            return;
+                                        }
+                                        if (dataJson == nullptr)
+                                        {
+                                            ESP_LOGE(TAG, "dataJson is null");
+                                            cJSON_Delete(json);
+                                            return;
+                                        }
+                                        int size = cJSON_GetArraySize(dataJson);
+                                        for (int ii = 0; ii < size; ii++)
+                                        {
+                                            cJSON *item = cJSON_GetArrayItem(dataJson, ii);
+                                            if (item == nullptr)
+                                            {
+                                                ESP_LOGE(TAG, "item is null");
+                                                continue;
+                                            }
+                                            cJSON *did = cJSON_GetObjectItem(item, "did");
+                                            if (did == nullptr)
+                                            {
+                                                ESP_LOGE(TAG, "did is null");
+                                                continue;
+                                            }
+                                            cJSON *siid = cJSON_GetObjectItem(item, "siid");
+                                            if (siid == nullptr)
+                                            {
+                                                ESP_LOGE(TAG, "siid is null");
+                                                continue;
+                                            }
+                                            cJSON *piid = cJSON_GetObjectItem(item, "piid");
+                                            if (piid == nullptr)
+                                            {
+                                                ESP_LOGE(TAG, "piid is null");
+                                                continue;
+                                            }
+                                            cJSON *value = cJSON_GetObjectItem(item, "value");
+                                            if (value == nullptr)
+                                            {
+                                                ESP_LOGE(TAG, "value is null");
+                                                continue;
+                                            }
+                                            cJSON *iid = cJSON_GetObjectItem(item, "iid");
+                                            if (value == nullptr)
+                                            {
+                                                ESP_LOGE(TAG, "iid is null");
+                                                continue;
+                                            }
+    
+                                            auto spec = miotSpec.find(iid->valuestring);
+                                            if (spec != miotSpec.end())
+                                            {
+                                                // ESP_LOGI(TAG, "iid found: %s,%d", iid->valuestring,value->valuedouble);
+                                                if(value->type == cJSON_Number)
+                                                {
+                                                    spec->second->valuedouble = value->valuedouble;
+                                                }
+                                                else if(value->type == cJSON_String)
+                                                {
+                                                    spec->second->valuestring = value->valuestring;
+                                                }
+                                                else if(value->type == cJSON_True)
+                                                {
+                                                    spec->second->valuedouble = 1;
+                                                    // ESP_LOGI(TAG, "iid:%s value true",iid->valuestring);
+                                                }
+                                                else if(value->type == cJSON_False)
+                                                {
+                                                    spec->second->valuedouble = 0;
+                                                    // ESP_LOGI(TAG, "iid:%s value false",iid->valuestring);
+                                                }
+
+                                                // ESP_LOGI(TAG, "iid:%s type:%d  value:%f", iid->valuestring, spec->second->type, spec->second->valuedouble);
+                                            }
+                                            else
+                                            {
+                                                ESP_LOGE(TAG, "spec not found: %s", iid->valuestring);
+                                            }
+                                        } });
         }
 
         void registerProperty(const cJSON *iot) override
@@ -131,7 +228,72 @@ namespace iot
 
                         } });
                 }
+                if ((static_cast<uint8_t>(a->valueint) & static_cast<uint8_t>(Permission::READ)) != 0)
+                {
+                    std::string iid = "0." + std::to_string(s->valueint) + "." + std::to_string(p->valueint);
+                    if (static_cast<ValueType>(v->valueint) == kValueTypeBoolean)
+                    {
+
+                        cJSON *json = cJSON_CreateBool(false);
+                        miotSpec.insert({iid, json});
+                        properties_.AddBooleanProperty(did->valuestring, d->valuestring, [this, iid]() -> bool
+                                                       {
+                                                           //    ESP_LOGI(TAG, "get iid value:%s", iid.c_str());
+                                                           auto prop = miotSpec.find(iid);
+                                                           if (prop == miotSpec.end())
+                                                           {
+                                                               ESP_LOGE(TAG, "property not found: %s", iid.c_str());
+                                                               return false;
+                                                           }
+                                                           auto b = static_cast<bool>(miotSpec.find(iid)->second->valuedouble);
+                                                           //    ESP_LOGI(TAG, "get iid value:%s %d", iid.c_str(), b);
+                                                           return b; //
+                                                       });
+                    }
+                    else if (static_cast<ValueType>(v->valueint) == kValueTypeNumber)
+                    {
+                        cJSON *json = cJSON_CreateNumber(0);
+                        miotSpec.insert({iid, json});
+                        properties_.AddNumberProperty(did->valuestring, d->valuestring, [this, iid]() -> int
+                                                      {
+                                                          //   ESP_LOGI(TAG, "get iid value:%s", iid.c_str());
+                                                          auto prop = miotSpec.find(iid);
+                                                          if (prop == miotSpec.end())
+                                                          {
+                                                              ESP_LOGE(TAG, "property not found: %s", iid.c_str());
+                                                              return 0;
+                                                          }
+                                                          //   ESP_LOGI(TAG, "get iid value:%s %f", iid.c_str(), miotSpec.find(iid)->second->valuedouble);
+                                                          return miotSpec.find(iid)->second->valuedouble; //
+                                                      });
+                    }
+                    else
+                    {
+                        cJSON *json = cJSON_CreateString("");
+                        miotSpec.insert({iid, json});
+                        properties_.AddStringProperty(did->valuestring, d->valuestring, [this, iid]() -> std::string
+                                                      {
+                                                          //   ESP_LOGI(TAG, "get iid value:%s type %d  %d %d", iid.c_str(), miotSpec.find(iid)->second->type, cJSON_Number, cJSON_String);
+                                                          auto prop = miotSpec.find(iid);
+                                                          if (prop == miotSpec.end())
+                                                          {
+                                                              ESP_LOGE(TAG, "property not found: %s", iid.c_str());
+                                                              return "";
+                                                          }
+
+                                                          return std::to_string(miotSpec.find(iid)->second->valuedouble);
+                                                          //   if (miotSpec.find(iid)->second->type == cJSON_String && size_t(miotSpec.find(iid)->second->valuestring) == 0)
+                                                          //   {
+                                                          //       ESP_LOGI(TAG, "get string iid value:%s , %f", iid.c_str(), miotSpec.find(iid)->second->valuedouble);
+                                                          //       return std::to_string(miotSpec.find(iid)->second->valuedouble);
+                                                          //   }
+                                                          //   return miotSpec.find(iid)->second->valuestring; //
+                                                      });
+                    }
+                }
             }
+            // 初始化设备状态
+            miotDevice.getProperties();
         }
 
         void registerAction(const cJSON *iot) override
@@ -234,7 +396,7 @@ namespace iot
                                            auto value = static_cast<int8_t>(parameters[key].number());
                                            av.insert({piid->valueint, value});
                                        }
-                                       miotDevice.callAction(s->valueint, a->valueint, av); });
+                                       miotDevice.callCloudAction(s->valueint, a->valueint, av); });
             }
         }
     };
