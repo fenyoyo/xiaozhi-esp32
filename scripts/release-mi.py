@@ -44,10 +44,13 @@ def ota_bin(board_type, project_version):
     if not os.path.exists(f"releases/v{project_version}_{board_type}"):
         os.makedirs(f"releases/v{project_version}_{board_type}")
     output_path = f"releases/v{project_version}_{board_type}/xiaozhi.bin"
+    output_path2 = f"releases/v{project_version}_{board_type}/merged-binary.bin"
     if os.path.exists(output_path):
         os.remove(output_path)
     shutil.copyfile("build/xiaozhi.bin", output_path)
-    print(f"copy ota bin to {output_path} done")
+    shutil.copyfile("build/merged-binary.bin", output_path2)
+    print(f"copy ota xiaozhi.bin to {output_path} done")
+    print(f"copy ota merged-binary.bin to {output_path2} done")
 
 def release_current():
     merge_bin()
