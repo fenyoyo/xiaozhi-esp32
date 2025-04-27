@@ -18,6 +18,7 @@
 
 #include "protocol.h"
 #include "ota.h"
+#include "mi.h"
 #include "background_task.h"
 
 #if CONFIG_USE_WAKE_WORD_DETECT
@@ -88,6 +89,7 @@ private:
     AudioProcessor audio_processor_;
 #endif
     Ota ota_;
+    Mi mi_;
     std::mutex mutex_;
     std::list<std::function<void()>> main_tasks_;
     std::unique_ptr<Protocol> protocol_;

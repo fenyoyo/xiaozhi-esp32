@@ -319,7 +319,7 @@ namespace iot
         virtual std::string GetStateJson();
         virtual void Invoke(const cJSON *command);
         // virtual void initMiot(const std::string &ip, const std::string &token, const std::string &name);
-        virtual void initMiot(const std::string &ip, const std::string &token, const std::string &name, const uint32_t &deviceId);
+        virtual void initMiot(const std::string &ip, const std::string &token, const std::string &name, const std::string &deviceId);
         virtual void registerProperty(const cJSON *iot);
         virtual void registerAction(const cJSON *iot);
         virtual void getProperties();

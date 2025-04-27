@@ -63,12 +63,15 @@ choice BOARD_TYPE
         bool "面包板新版接线（WiFi）"
     config BOARD_TYPE_BREAD_COMPACT_WIFI_LCD
         bool "面包板新版接线（WiFi）+ LCD" 
+    config BOARD_TYPE_BREAD_COMPACT_WIFI_LCD_BOX
+        bool "面包板新版接线（WiFi）+ LCD 音响"
     config BOARD_TYPE_BREAD_COMPACT_ML307
         bool "面包板新版接线（ML307 AT）"
     config BOARD_TYPE_BREAD_COMPACT_ESP32
         bool "面包板（WiFi） ESP32 DevKit"
     config BOARD_TYPE_BREAD_COMPACT_ESP32_LCD
         bool "面包板（WiFi+ LCD） ESP32 DevKit"
+
     config BOARD_TYPE_ESP32_CGC
         bool "ESP32 CGC"
     config BOARD_TYPE_ESP_BOX_3

@@ -30,13 +30,10 @@ namespace iot
         std::string GetDescriptorsJson();
         bool GetStatesJson(std::string &json, bool delta = false);
         void Invoke(const cJSON *command);
-        void InitMoit();
 
     private:
         ThingManager() = default;
         ~ThingManager() = default;
-
-        std::string processString(const std::string &input);
 
         std::vector<Thing *> things_;
         std::map<std::string, std::string> last_states_;

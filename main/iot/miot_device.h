@@ -92,12 +92,12 @@ namespace iot
         std::string m_ip;
         std::string m_token;
         uint32_t stamp_;
-        uint32_t m_deviceId;
+        std::string m_deviceId;
         std::function<void(const std::string &)> userCallback;
 
     public:
         MiotDevice() = default;
-        MiotDevice(const std::string &ip, const std::string &token, const u_int32_t &did);
+        MiotDevice(const std::string &ip, const std::string &token, const std::string &did);
         void setCallback(std::function<void(const std::string &)> callback)
         {
             userCallback = callback;

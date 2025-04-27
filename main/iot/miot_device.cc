@@ -8,7 +8,7 @@
 #define TAG "MiotDevice"
 namespace iot
 {
-    MiotDevice::MiotDevice(const std::string &ip, const std::string &token, const uint32_t &did) : m_ip(ip), m_token(token), m_deviceId(did)
+    MiotDevice::MiotDevice(const std::string &ip, const std::string &token, const std::string &did) : m_ip(ip), m_token(token), m_deviceId(did)
     {
         // ESP_LOGI(TAG, "MiotDevice constructor %s %s %ld", ip.data(), token.data(), did);
     }
@@ -19,7 +19,7 @@ namespace iot
 
     void MiotDevice::setCloudProperty(const std::string &did, const uint8_t &siid, const uint8_t &piid, const int &value, const bool &isBool)
     {
-        auto jsonStr = "[{\"did\": \"" + did + "\",";
+        auto jsonStr = "[{\"did\": \"" + m_deviceId + "\",";
         jsonStr += "\"siid\": " + std::to_string(siid) + ",";
         jsonStr += "\"piid\": " + std::to_string(piid) + ",";
         if (isBool)
@@ -44,7 +44,7 @@ namespace iot
 
     std::string MiotDevice::callCloudAction(const uint8_t &siid, const uint8_t &aiid, std::map<int, int> av)
     {
-        std::string jsonStr = "{\"did\": \"call-" + std::to_string(siid) + "-" + std::to_string(aiid) + "\",";
+        std::string jsonStr = "{\"did\": \"" + m_deviceId + "\",";
         jsonStr += "\"siid\": " + std::to_string(siid) + ",";
         jsonStr += "\"aiid\": " + std::to_string(aiid) + ",";
         jsonStr += "\"in\": [";
@@ -71,13 +71,13 @@ namespace iot
     {
         // ESP_LOGI(TAG, "request is %s", request.c_str());
         Message msg;
-        msg.header.deviceID = m_deviceId;
+        msg.header.deviceID = 0;
         std::string mac = SystemInfo::GetMacAddress();
         std::string build = msg.build(request, m_token);
         // ESP_LOGI(TAG, "token is %s", m_token.c_str());
 
-        std::string url = std::string(CONFIG_IOT_URL) + "api/v1/micloud/io";
-        auto post_data = "{\"ciphertext\": \"" + Utils::stringToHexManual(build) + "\",\"mac\": \"" + mac + "\"}";
+        std::string url = std::string(CONFIG_IOT_URL) + "api/v1/micloud/io3";
+        auto post_data = "{\"ciphertext\": \"" + Utils::stringToHexManual(build) + "\",\"mac\": \"" + mac + "\", \"did\": \"" + m_deviceId + "\"}";
         std::string response = sendRequest(url, post_data);
         userCallback(response);
     }
@@ -101,7 +101,7 @@ namespace iot
     {
         std::string mac = SystemInfo::GetMacAddress();
         std::string url = std::string(CONFIG_IOT_URL) + "api/v1/micloud/props";
-        auto post_data = "{\"did\": \"" + std::to_string(m_deviceId) + "\",\"mac\": \"" + mac + "\"}";
+        auto post_data = "{\"did\": \"" + m_deviceId + "\",\"mac\": \"" + mac + "\"}";
         std::string response = sendRequest(url, post_data);
         userCallback(response);
     }
@@ -115,7 +115,7 @@ namespace iot
         std::string devicesJsonStr;
 
         // auto _post_data = Utils::stringToHexManual(post_data);
-        // ESP_LOGI(TAG, "post data is %s", post_data.c_str());
+        ESP_LOGI(TAG, "post data is %s", post_data.c_str());
         if (!http->Open(method, url, post_data))
         {
             ESP_LOGE(TAG, "Failed to open HTTP connection");

@@ -19,6 +19,7 @@ set(SOURCES "audio_codecs/audio_codec.cc"
             "system_info.cc"
             "application.cc"
             "ota.cc"
+            "mi.cc"
             "settings.cc"
             "background_task.cc"
             "main.cc"
@@ -38,12 +39,15 @@ list(APPEND INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/boards/common)
 # 根据 BOARD_TYPE 配置添加对应的板级文件
 if(CONFIG_BOARD_TYPE_BREAD_COMPACT_WIFI)
     set(BOARD_TYPE "bread-compact-wifi")
+elseif(CONFIG_BOARD_TYPE_BREAD_COMPACT_WIFI_LCD_BOX)
+    set(BOARD_TYPE "bread-compact-wifi-lcd-box")
 elseif(CONFIG_BOARD_TYPE_BREAD_COMPACT_ML307)
     set(BOARD_TYPE "bread-compact-ml307")
 elseif(CONFIG_BOARD_TYPE_BREAD_COMPACT_ESP32)
     set(BOARD_TYPE "bread-compact-esp32")
 elseif(CONFIG_BOARD_TYPE_BREAD_COMPACT_ESP32_LCD)
     set(BOARD_TYPE "bread-compact-esp32-lcd")
+ 
 elseif(CONFIG_BOARD_TYPE_DF_K10)
     set(BOARD_TYPE "df-k10")
 elseif(CONFIG_BOARD_TYPE_ESP_BOX_3)

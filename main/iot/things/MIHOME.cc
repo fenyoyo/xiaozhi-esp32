@@ -23,13 +23,13 @@ namespace iot
         {
         }
 
-        void initMiot(const std::string &ip, const std::string &token, const std::string &name, const uint32_t &did) override
+        void initMiot(const std::string &ip, const std::string &token, const std::string &name, const std::string &deviceId) override
         {
             ip_ = ip;
             token_ = token;
             set_description(name);
             // set_name(token);
-            miotDevice = MiotDevice(ip_, token_, did);
+            miotDevice = MiotDevice(ip_, token_, deviceId);
             miotDevice.init();
             miotDevice.setCallback([this](const std::string &data)
                                    {

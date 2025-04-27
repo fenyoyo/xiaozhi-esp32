@@ -1043,14 +1043,56 @@ void Application::MiHome()
     //     // Application* app = (Application*)arg;
     //     // app->CheckNewVersion();
     //     vTaskDelete(NULL); }, "get_miot_info", 4096 * 2, this, 1, nullptr);
+    // while (true)
+    // {
+    //     SetDeviceState(kDeviceStateActivating);
+    //     auto display = Board::GetInstance().GetDisplay();
+    //     display->SetStatus("初始化米家");
+    //     auto &thing_manager = iot::ThingManager::GetInstance();
+    //     thing_manager.InitMoit();
+    //     display->SetStatus("初始化完成");
+    //     break;
+    // }
+    auto display = Board::GetInstance().GetDisplay();
+
+    const int MAX_RETRY = 3;
+    int retry_count = 0;
+    int retry_delay = 10; // 初始重试延迟为10秒
+
     while (true)
     {
-        SetDeviceState(kDeviceStateActivating);
-        auto display = Board::GetInstance().GetDisplay();
-        display->SetStatus("初始化米家");
-        auto &thing_manager = iot::ThingManager::GetInstance();
-        thing_manager.InitMoit();
-        display->SetStatus("初始化完成");
-        break;
+        if (!mi_.GetMi())
+        {
+            retry_count++;
+            if (retry_count >= MAX_RETRY)
+            {
+                ESP_LOGE(TAG, "Too many retries, exit version check");
+                break;
+            }
+
+            auto &message = mi_.GetErrMsg();
+            if (!mi_.GetBinding())
+            {
+                ESP_LOGE(TAG, "Get MiHome binding failed");
+                // Alert(Lang::Strings::ERROR, message.c_str(), "sad");
+
+                // display->SetStatus(Lang::Strings::CHECKING_NEW_VERSION);
+                display->SetChatMessage("system", message.c_str());
+                // display->SetEmotion("sad");
+                vTaskDelay(pdMS_TO_TICKS(retry_delay * 1000));
+                continue;
+            }
+            if (!mi_.GetMiBindingStatus())
+            {
+                ESP_LOGE(TAG, "Get MiHome binding mi failed");
+                // Alert(Lang::Strings::ERROR, "xiaozhi.uyuo.me 绑定米家", "sad");
+                display->SetChatMessage("system", message.c_str());
+                // display->SetEmotion("sad");
+                vTaskDelay(pdMS_TO_TICKS(retry_delay * 1000));
+                continue;
+            }
+            retry_delay *= 2;
+            break;
+        }
     }
 }
