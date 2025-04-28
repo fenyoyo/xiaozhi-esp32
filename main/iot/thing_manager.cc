@@ -52,7 +52,7 @@ namespace iot
             json.pop_back();
         }
         json += "]";
-        ESP_LOGI(TAG, "json:%s", json.c_str());
+        // ESP_LOGI(TAG, "json:%s", json.c_str());
         return changed;
     }
 

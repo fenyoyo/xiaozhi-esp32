@@ -2,7 +2,7 @@
 #include <esp_log.h>
 #include <board.h>
 #include "system_info.h"
-#include "cJSON.h"
+
 #include "iot/thing_manager.h"
 #include "iot/thing.h"
 
@@ -20,8 +20,8 @@ bool Mi::GetMi()
 {
     auto &board = Board::GetInstance();
     std::string mac = SystemInfo::GetMacAddress();
-    auto &thing_manager = iot::ThingManager::GetInstance();
-    std::string url = std::string(CONFIG_IOT_URL) + "api/v1/micloud/" + mac + "/iot2";
+
+    std::string url = std::string(CONFIG_IOT_URL) + "api/v1/micloud/" + mac + "/iot3";
 
     auto http = board.CreateHttp();
     std::string method = "GET";
@@ -46,32 +46,36 @@ bool Mi::GetMi()
 
     if (code->valueint == 100)
     {
-        has_binding_ = false;
-
         err_msg = message->valuestring;
         ESP_LOGE(TAG, "Get MiHome info failed, code: %d, message: %s", code->valueint, err_msg.c_str());
         return false;
     }
+    has_binding_ = true;
     if (code->valueint == 101)
     {
-        has_mi_binding_ = false;
         err_msg = message->valuestring;
         return false;
     }
-
+    has_mi_binding_ = true;
     cJSON *data = cJSON_GetObjectItem(root, "data");
     cJSON *open_iot = cJSON_GetObjectItem(data, "open_iot");
-    if (cJSON_IsFalse(open_iot))
+    if (cJSON_IsTrue(open_iot))
     {
-        open_iot_ = false;
+        open_iot_ = true;
     }
-    cJSON *list = cJSON_GetObjectItem(data, "list");
-    int size = cJSON_GetArraySize(list);
+    device_list_ = cJSON_GetObjectItem(data, "list");
+    return true;
+}
+
+bool Mi::RegisterIot()
+{
+    auto &thing_manager = iot::ThingManager::GetInstance();
+    int size = cJSON_GetArraySize(device_list_);
     for (int i = 0; i < size; i++)
     {
         // 输出剩余内存
-        ESP_LOGI(TAG, "剩余内存：%ld", esp_get_free_heap_size());
-        cJSON *item = cJSON_GetArrayItem(list, i);
+        // ESP_LOGI(TAG, "剩余内存：%ld", esp_get_free_heap_size());
+        cJSON *item = cJSON_GetArrayItem(device_list_, i);
         cJSON *name = cJSON_GetObjectItem(item, "name");
         cJSON *title = cJSON_GetObjectItem(item, "title");
         cJSON *model = cJSON_GetObjectItem(item, "model");
@@ -80,7 +84,7 @@ bool Mi::GetMi()
         cJSON *did = cJSON_GetObjectItem(item, "did");
 
         cJSON *miot = cJSON_GetObjectItem(item, "iot");
-        ESP_LOGI(TAG, "item%s", cJSON_PrintUnformatted(item));
+        // ESP_LOGI(TAG, "item%s", cJSON_PrintUnformatted(item));
         if (cJSON_IsNull(miot))
         {
             // std::string model_str = processString(model->valuestring);
@@ -127,7 +131,6 @@ bool Mi::GetMi()
     }
     return true;
 }
-
 std::string Mi::processString(const std::string &input)
 {
     std::string result;

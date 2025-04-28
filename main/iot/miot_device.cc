@@ -115,7 +115,7 @@ namespace iot
         std::string devicesJsonStr;
 
         // auto _post_data = Utils::stringToHexManual(post_data);
-        ESP_LOGI(TAG, "post data is %s", post_data.c_str());
+        // ESP_LOGI(TAG, "post data is %s", post_data.c_str());
         if (!http->Open(method, url, post_data))
         {
             ESP_LOGE(TAG, "Failed to open HTTP connection");

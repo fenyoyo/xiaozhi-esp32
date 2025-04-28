@@ -1094,5 +1094,22 @@ void Application::MiHome()
             retry_delay *= 2;
             break;
         }
+        if (mi_.GetOpenIot())
+        {
+            xTaskCreate([](void *arg)
+                        {
+                            // auto& thing_manager = iot::ThingManager::GetInstance();
+                            // // thing_manager.AddThing(iot::CreateThing("Fan"));
+                            // thing_manager.InitMoit();
+                            Application *app = (Application *)arg;
+                            app->mi_.RegisterIot();
+                            vTaskDelete(NULL); //
+                        }, 
+                        "get_miot_info", 4096 * 2, this, 1, nullptr);
+
+            /* code */
+        }
+
+        break;
     }
 }

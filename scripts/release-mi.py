@@ -78,6 +78,10 @@ def get_all_board_types():
 
 def release(board_type, board_config):
     config_path = f"main/boards/{board_type}/config.json"
+    if board_type not in ["bread-compact-wifi", "bread-compact-wifi-lcd","xingzhi-cube-0.85tft-ml307","xingzhi-cube-0.85tft-wifi","xingzhi-cube-0.96oled-wifi","xingzhi-cube-0.96oled-ml307","xingzhi-cube-1.54tft-wifi","xingzhi-cube-1.54tft-ml307","lichuang-dev"]:
+        print(f"跳过 {board_type} 因为不支持")
+        return
+    
     if not os.path.exists(config_path):
         print(f"跳过 {board_type} 因为 config.json 不存在")
         return
@@ -141,7 +145,7 @@ def release(board_type, board_config):
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         board_configs = get_all_board_types()
-        found = False
+        found = False 
         for board_config, board_type in board_configs.items():
             if sys.argv[1] == 'all' or board_type == sys.argv[1]:
                 release(board_type, board_config)
