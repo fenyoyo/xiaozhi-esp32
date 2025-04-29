@@ -103,6 +103,7 @@ namespace iot
         std::string url = std::string(CONFIG_IOT_URL) + "api/v1/micloud/props";
         auto post_data = "{\"did\": \"" + m_deviceId + "\",\"mac\": \"" + mac + "\"}";
         std::string response = sendRequest(url, post_data);
+        // ESP_LOGI(TAG, "response is %s", response.c_str());
         userCallback(response);
     }
 

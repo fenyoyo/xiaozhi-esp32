@@ -1,5 +1,6 @@
 #include "iot/thing.h"
 #include "iot/miot.h"
+#include "string"
 #include <esp_log.h>
 #include "iot/miot_device.h"
 
@@ -94,10 +95,11 @@ namespace iot
                                                 continue;
                                             }
                                             cJSON *iid = cJSON_GetObjectItem(item, "iid");
-                                            if (value == nullptr)
+                                            if (iid == nullptr)
                                             {
                                                 ESP_LOGE(TAG, "iid is null");
-                                                continue;
+                                                std::string iid_str = "0."+std::to_string(siid->valueint) + "." + std::to_string(piid->valueint).c_str();
+                                                iid = cJSON_AddStringToObject(item, "iid", iid_str.c_str());
                                             }
     
                                             auto spec = miotSpec.find(iid->valuestring);
