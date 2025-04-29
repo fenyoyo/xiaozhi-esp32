@@ -93,11 +93,12 @@ namespace iot
         std::string m_token;
         uint32_t stamp_;
         std::string m_deviceId;
+        std::string mac_;
         std::function<void(const std::string &)> userCallback;
 
     public:
         MiotDevice() = default;
-        MiotDevice(const std::string &ip, const std::string &token, const std::string &did);
+        MiotDevice(const std::string &ip, const std::string &token, const std::string &did, const std::string &mac);
         void setCallback(std::function<void(const std::string &)> callback)
         {
             userCallback = callback;
@@ -110,7 +111,6 @@ namespace iot
         {
             m_deviceId = deviceId;
         }
-        void init();
 
         void setCloudProperty(const std::string &did, const uint8_t &siid, const uint8_t &piid, const int &value, const bool &isBool = false);
         std::string createRequest(const std::string &command, const std::string &parameters);

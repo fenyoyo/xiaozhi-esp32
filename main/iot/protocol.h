@@ -3,9 +3,9 @@
 //
 #ifndef IOT_PROTOCOL_H
 #define IOT_PROTOCOL_H
-#include <cstdint>
+// #include <cstdint>
 #include <string>
-#include <vector>
+// #include <vector>
 namespace iot
 {
     class Utils
@@ -38,31 +38,17 @@ namespace iot
         uint32_t unknown = 0;
         uint32_t deviceID = 0;
         uint32_t stamp = 0;
-
-        std::string headerSerialize() const;
+        std::string headerSerialize();
     };
 
     struct Message
     {
         Header header;
         std::string checksumOrToken;
-        // std::string checksumOrToken;
-        // std::vector<unsigned char> checksumOrToken;
         std::string data;
         bool success = false;
-
-        //
         bool parse(const std::string &packetData);
-
-        //
-        // void parse(const std::vector<unsigned char> *packetData, const std::string *token);
-        //
-        std::string headerSerialize();
-
-        //
         std::string build(const std::string &msg, const std::string &token);
-
-        //
         std::string decrypt(const std::string &token);
     };
 }

@@ -70,6 +70,7 @@ bool Mi::GetMi()
 bool Mi::RegisterIot()
 {
     auto &thing_manager = iot::ThingManager::GetInstance();
+    std::string mac = SystemInfo::GetMacAddress();
     int size = cJSON_GetArraySize(device_list_);
     for (int i = 0; i < size; i++)
     {
@@ -108,7 +109,7 @@ bool Mi::RegisterIot()
                 ESP_LOGE(TAG, "Failed to create thing");
                 continue;
             }
-            thing2->initMiot(cJSON_IsNull(ip) ? "" : ip->valuestring, token->valuestring, name->valuestring, did->valuestring);
+            thing2->initMiot(cJSON_IsNull(ip) ? "" : ip->valuestring, token->valuestring, name->valuestring, did->valuestring, mac);
             cJSON *p = cJSON_GetObjectItem(miot, "p");
             cJSON *a = cJSON_GetObjectItem(miot, "a");
             thing2->registerProperty(p);

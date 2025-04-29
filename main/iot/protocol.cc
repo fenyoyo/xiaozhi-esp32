@@ -1,10 +1,4 @@
 #include "protocol.h"
-
-#include <iostream>
-#include <vector>
-// #include <wolfssl/wolfcrypt/aes.h>
-// #include <wolfssl/wolfcrypt/logging.h>
-// #include <wolfssl/wolfcrypt/md5.h>
 #include <mbedtls/aes.h>
 #include <mbedtls/md5.h>
 #include <lwip/def.h>
@@ -157,7 +151,7 @@ namespace iot
         return bytes;
     }
 
-    std::string Header::headerSerialize() const
+    std::string Header::headerSerialize()
     {
         std::string headerData;
         headerData.reserve(16);
@@ -230,77 +224,19 @@ namespace iot
         return true;
     }
 
-    std::string Message::headerSerialize()
-    {
-        std::vector<uint8_t> headerData;
-        headerData.reserve(16);
-        headerData.push_back(header.magicNumber >> 8);
-        headerData.push_back(header.magicNumber & 0xFF);
-        headerData.push_back(header.packetLength >> 8);
-        headerData.push_back(header.packetLength & 0xFF);
-        for (int i = 3; i >= 0; --i)
-        {
-            headerData.push_back((header.unknown >> (i * 8)) & 0xFF);
-        }
-        for (int i = 3; i >= 0; --i)
-        {
-            headerData.push_back((header.deviceID >> (i * 8)) & 0xFF);
-        }
-        for (int i = 3; i >= 0; --i)
-        {
-            headerData.push_back((header.stamp >> (i * 8)) & 0xFF);
-        }
-        std::string headerDataStr(headerData.begin(), headerData.end());
-
-        return headerDataStr;
-    }
-
     std::string Message::build(const std::string &msg, const std::string &token)
     {
         std::string _token = Utils::hexStringToByteArray(token);
-
         std::string key = Utils::md5Hash(_token);
-        // std::cout << "key:" << Utils::stringToHexManual(key) << std::endl;
         std::string iv = Utils::md5Hash(key + _token);
-        // std::cout << "iv:" << Utils::stringToHexManual(iv) << std::endl;
-
         std::string _msg = msg;
-        // std::cout << "msg:" << _msg << std::endl;
-        // std::cout << "msg size:" << std::to_string(_msg.size()) << std::endl;
         _msg.push_back(0x00);
-        // std::cout << "msg size:" << std::to_string(_msg.size()) << std::endl;
         std::string padded_data = Utils::pkcs7Padding(_msg, 16);
-        // std::cout << "padded_data:" << Utils::stringToHexManual(padded_data) << std::endl;
-
         std::string ciphertext = Utils::aes_cbc_encrypt(key, iv, padded_data);
-
-        // Aes aes;
-        // if (wc_AesSetKey(&aes, reinterpret_cast<const byte *>(key.data()), key.size(),
-        //                  reinterpret_cast<const byte *>(iv.data()), AES_ENCRYPTION) != 0)
-        // {
-        //     std::cerr << "AES key set failed." << std::endl;
-        // }
-
-        // byte encrypted[padded_data.size()];
-        // // 进行加密操作
-        // if (wc_AesCbcEncrypt(&aes, encrypted, reinterpret_cast<const byte *>(padded_data.data()),
-        //                      padded_data.size()) != 0)
-        // {
-        //     std::cerr << "Encryption failed." << std::endl;
-        //     wc_AesFree(&aes);
-        // }
-        // wc_AesFree(&aes);
-
-        // data.reserve(padded_data.size());
-        // // 进行加密操作'
-        // 这里的data赋值不成功
-        // data.append(encrypted, encrypted + padded_data.size());
-        // std::string _encrypted(encrypted, encrypted + padded_data.size());
         header.packetLength = ciphertext.size() + 32;
-        checksumOrToken = Utils::Md5Checksum(headerSerialize(), _token, ciphertext);
-
-        std::string packetData;
         std::string headerData = header.headerSerialize();
+        checksumOrToken = Utils::Md5Checksum(headerData, _token, ciphertext);
+        std::string packetData;
         packetData += headerData;
         packetData += checksumOrToken;
         packetData += ciphertext;
@@ -311,25 +247,8 @@ namespace iot
     {
         std::string _token = Utils::hexStringToByteArray(token);
         std::string key = Utils::md5Hash(_token);
-
         std::string iv = Utils::md5Hash(key + _token);
-
         std::string decrypted = Utils::aes_cbc_decrypt(key, iv, data);
-        // Aes aes;
-        // if (wc_AesSetKey(&aes, reinterpret_cast<const byte *>(key.data()), key.size(),
-        //                  reinterpret_cast<const byte *>(iv.data()), AES_DECRYPTION) != 0)
-        // {
-        //     std::cerr << "AES key set failed." << std::endl;
-        // }
-        // // std::vector<unsigned char> decrypted(data.size());
-        // byte decrypted[data.size()];
-        // // 进行加密操作
-        // if (wc_AesCbcDecrypt(&aes, decrypted, reinterpret_cast<const byte *>(data.data()), data.size()) != 0)
-        // {
-        //     std::cerr << "Encryption failed." << std::endl;
-        //     wc_AesFree(&aes);
-        // }
-        // std::string _decrypted(decrypted, decrypted + data.size());
         std::string unpadded_plaintext = Utils::pkcs7UnPadding(decrypted);
         return unpadded_plaintext;
     }

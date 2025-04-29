@@ -1,20 +1,15 @@
 #include "miot_device.h"
-#include "iot/miot.h"
-#include "iot/udp_task.h"
+#include "iot/protocol.h"
 #include <board.h>
 #include <esp_log.h>
 #include <cJSON.h>
-#include "system_info.h"
+// #include "system_info.h"
 #define TAG "MiotDevice"
 namespace iot
 {
-    MiotDevice::MiotDevice(const std::string &ip, const std::string &token, const std::string &did) : m_ip(ip), m_token(token), m_deviceId(did)
+    MiotDevice::MiotDevice(const std::string &ip, const std::string &token, const std::string &did, const std::string &mac) : m_ip(ip), m_token(token), m_deviceId(did), mac_(mac)
     {
         // ESP_LOGI(TAG, "MiotDevice constructor %s %s %ld", ip.data(), token.data(), did);
-    }
-
-    void MiotDevice::init()
-    {
     }
 
     void MiotDevice::setCloudProperty(const std::string &did, const uint8_t &siid, const uint8_t &piid, const int &value, const bool &isBool)
@@ -72,12 +67,11 @@ namespace iot
         // ESP_LOGI(TAG, "request is %s", request.c_str());
         Message msg;
         msg.header.deviceID = 0;
-        std::string mac = SystemInfo::GetMacAddress();
         std::string build = msg.build(request, m_token);
         // ESP_LOGI(TAG, "token is %s", m_token.c_str());
 
         std::string url = std::string(CONFIG_IOT_URL) + "api/v1/micloud/io3";
-        auto post_data = "{\"ciphertext\": \"" + Utils::stringToHexManual(build) + "\",\"mac\": \"" + mac + "\", \"did\": \"" + m_deviceId + "\"}";
+        auto post_data = "{\"ciphertext\": \"" + Utils::stringToHexManual(build) + "\",\"mac\": \"" + mac_ + "\", \"did\": \"" + m_deviceId + "\"}";
         std::string response = sendRequest(url, post_data);
         userCallback(response);
     }
@@ -99,9 +93,8 @@ namespace iot
 
     void MiotDevice::getProperties()
     {
-        std::string mac = SystemInfo::GetMacAddress();
         std::string url = std::string(CONFIG_IOT_URL) + "api/v1/micloud/props";
-        auto post_data = "{\"did\": \"" + m_deviceId + "\",\"mac\": \"" + mac + "\"}";
+        auto post_data = "{\"did\": \"" + m_deviceId + "\",\"mac\": \"" + mac_ + "\"}";
         std::string response = sendRequest(url, post_data);
         // ESP_LOGI(TAG, "response is %s", response.c_str());
         userCallback(response);
@@ -157,5 +150,4 @@ namespace iot
         }
         return "";
     }
-
 } // namespace iot

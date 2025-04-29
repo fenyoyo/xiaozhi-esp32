@@ -1,5 +1,4 @@
 #include "iot/thing.h"
-#include "iot/miot.h"
 #include "string"
 #include <esp_log.h>
 #include "iot/miot_device.h"
@@ -14,9 +13,6 @@ namespace iot
         std::string ip_;
         std::string token_;
         MiotDevice miotDevice;
-
-        // std::map<std::string, SpecProperty> miotSpec = {};
-        // std::map<std::string, SpecAction> miotSpecAction = {};
         std::map<std::string, cJSON *> miotSpec = {};
 
     public:
@@ -24,14 +20,13 @@ namespace iot
         {
         }
 
-        void initMiot(const std::string &ip, const std::string &token, const std::string &name, const std::string &deviceId) override
+        void initMiot(const std::string &ip, const std::string &token, const std::string &name, const std::string &deviceId, const std::string &mac) override
         {
             ip_ = ip;
             token_ = token;
             set_description(name);
             // set_name(token);
-            miotDevice = MiotDevice(ip_, token_, deviceId);
-            miotDevice.init();
+            miotDevice = MiotDevice(ip_, token_, deviceId, mac);
             miotDevice.setCallback([this](const std::string &data)
                                    {
                                     // {"code":0,"msg":"Success","data":[{"did":"682588579","iid":"0.2.1","siid":2,"piid":1,"value":true,"code":0,"updateTime":1745186665,"exe_time":0},{"did":"682588579","iid":"0.2.2","siid":2,"piid":2,"value":0,"code":0,"updateTime":1745178312,"exe_time":0},{"did":"682588579","iid":"0.2.4","siid":2,"piid":4,"value":0,"code":0,"updateTime":1745178313,"exe_time":0},{"did":"682588579","iid":"0.3.1","siid":3,"piid":1,"value":64,"code":0,"updateTime":1745186634,"exe_time":0},{"did":"682588579","iid":"0.3.4","siid":3,"piid":4,"value":13,"code":0,"updateTime":1745186488,"exe_time":0},{"did":"682588579","iid":"0.3.7","siid":3,"piid":7,"value":29,"code":0,"updateTime":1745186126,"exe_time":0},{"did":"682588579","iid":"0.3.8","siid":3,"piid":8,"value":0,"code":0,"updateTime":1745178316,"exe_time":0}]}
