@@ -31,6 +31,8 @@ public:
     void SetOutputState(uint8_t bit, uint8_t level)
     {
         uint16_t data;
+        int index = bit;
+
         if (bit < 8)
         {
             data = ReadReg(0x02);
@@ -38,10 +40,10 @@ public:
         else
         {
             data = ReadReg(0x03);
-            bit -= 8;
+            index -= 8;
         }
 
-        data = (data & ~(1 << bit)) | (level << bit);
+        data = (data & ~(1 << index)) | (level << index);
 
         if (bit < 8)
         {
