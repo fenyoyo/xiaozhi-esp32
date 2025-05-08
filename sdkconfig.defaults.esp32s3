@@ -18,7 +18,6 @@ CONFIG_ESP32S3_DATA_CACHE_LINE_64B=y
 
 CONFIG_SR_WN_WN9_NIHAOXIAOZHI_TTS=y
 
-CONFIG_OTA_VERSION_URL="https://xiaozhi.uyuo.me/api/v1/devices/ota"
-
+CONFIG_OTA_URL="https://xiaozhi.uyuo.me/api/v1/devices/ota"
 
 CONFIG_ESP_SYSTEM_EVENT_TASK_STACK_SIZE=4096
