@@ -118,6 +118,7 @@ namespace iot
         void sendCloud(const std::string &jsonStr);
         void getProperties();
         std::string sendRequest(const std::string &url, const std::string &post_data);
+        std::string sendRequest2(const std::string &url, const std::string &post_data);
     };
 } // namespace iot
 

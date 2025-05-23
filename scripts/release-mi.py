@@ -101,10 +101,6 @@ def release(board_type, board_config):
         config = json.load(f)
     target = config["target"]
     builds = config["builds"]
-    if target == "esp32":
-        print(f"跳过 {target} 因为不持支")
-        return
-
     for build in builds:
         name = build["name"]
         if not name.startswith(board_type):

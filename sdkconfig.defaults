@@ -63,3 +63,5 @@ CONFIG_LV_USE_WIN=n
 
 CONFIG_LV_BUILD_EXAMPLES=n
 
+CONFIG_OTA_URL="https://xiaozhi.uyuo.me/api/v1/devices/ota"
+CONFIG_IOT_URL="https://xiaozhi.uyuo.me/"

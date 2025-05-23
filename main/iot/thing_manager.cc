@@ -80,7 +80,7 @@ namespace iot
             json_str.pop_back();
         }
         json_str += "]";
-        // ESP_LOGI(TAG, "json_str:%s", json_str.c_str());
+        ESP_LOGI(TAG, "json_str:%s", json_str.c_str());
         return json_str;
     }
 

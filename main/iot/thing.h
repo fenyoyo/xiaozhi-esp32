@@ -318,16 +318,18 @@ namespace iot
         virtual std::string GetDescriptorJson();
         virtual std::string GetStateJson();
         virtual void Invoke(const cJSON *command);
-        virtual void initMiot(const std::string &ip, const std::string &token, const std::string &name, const std::string &deviceId, const std::string &mac);
+        virtual void initMiot(const std::string &token, const std::string &name, const std::string &deviceId, const std::string &mac);
         virtual void registerProperty(const cJSON *iot);
         virtual void registerAction(const cJSON *iot);
-        virtual void getProperties();
+        // virtual void getProperties();
+        virtual void setProperties(const cJSON *props);
 
         const std::string &name() const { return name_; }
         void set_name(const std::string &name) { name_ = name; }
         const std::string &description() const { return description_; }
-
         void set_description(const std::string &description) { description_ = description; }
+        const std::string &did() const { return did_; }
+        void set_did(const std::string &did) { did_ = did; }
 
     protected:
         PropertyList properties_;
@@ -336,6 +338,7 @@ namespace iot
     private:
         std::string name_;
         std::string description_;
+        std::string did_ = "";
     };
 
     void RegisterThing(const std::string &type, std::function<Thing *()> creator);

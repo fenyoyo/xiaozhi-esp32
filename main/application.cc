@@ -535,6 +535,7 @@ void Application::Start()
         } else if (strcmp(type->valuestring, "iot") == 0) {
             auto commands = cJSON_GetObjectItem(root, "commands");
             if (commands != NULL) {
+                ESP_LOGI(TAG, "IOT commands: %s", cJSON_PrintUnformatted(commands));
                 auto& thing_manager = iot::ThingManager::GetInstance();
                 for (int i = 0; i < cJSON_GetArraySize(commands); ++i) {
                     auto command = cJSON_GetArrayItem(commands, i);
@@ -1039,81 +1040,186 @@ bool Application::CanEnterSleepMode()
 
 void Application::MiHome()
 {
-    // xTaskCreate([](void *arg)
-    //             {
-    //     auto& thing_manager = iot::ThingManager::GetInstance();
-    //     // thing_manager.AddThing(iot::CreateThing("Fan"));
-    //     thing_manager.InitMoit();
-    //     // Application* app = (Application*)arg;
-    //     // app->CheckNewVersion();
-    //     vTaskDelete(NULL); }, "get_miot_info", 4096 * 2, this, 1, nullptr);
-    // while (true)
-    // {
-    //     SetDeviceState(kDeviceStateActivating);
-    //     auto display = Board::GetInstance().GetDisplay();
-    //     display->SetStatus("初始化米家");
-    //     auto &thing_manager = iot::ThingManager::GetInstance();
-    //     thing_manager.InitMoit();
-    //     display->SetStatus("初始化完成");
-    //     break;
-    // }
+    std::string url = "http://192.168.1.6:8000/api/v1/iot/mqtt";
+    // std::string url = std::string(CONFIG_IOT_URL) + "api/v1/iot/mqtt";
+    auto &board = Board::GetInstance();
     auto display = Board::GetInstance().GetDisplay();
-
     const int MAX_RETRY = 3;
     int retry_count = 0;
     int retry_delay = 10; // 初始重试延迟为10秒
-
+    cJSON *root_ = nullptr;
     while (true)
     {
-        if (!mi_.GetMi())
+        ++retry_count;
+        if (retry_count >= MAX_RETRY)
         {
-            retry_count++;
-            if (retry_count >= MAX_RETRY)
-            {
-                ESP_LOGE(TAG, "Too many retries, exit version check");
-                break;
-            }
-
-            auto &message = mi_.GetErrMsg();
-            if (!mi_.GetBinding())
-            {
-                ESP_LOGE(TAG, "Get MiHome binding failed");
-                // Alert(Lang::Strings::ERROR, message.c_str(), "sad");
-
-                // display->SetStatus(Lang::Strings::CHECKING_NEW_VERSION);
-                display->SetChatMessage("system", message.c_str());
-                // display->SetEmotion("sad");
-                vTaskDelay(pdMS_TO_TICKS(retry_delay * 1000));
-                continue;
-            }
-            if (!mi_.GetMiBindingStatus())
-            {
-                ESP_LOGE(TAG, "Get MiHome binding mi failed");
-                // Alert(Lang::Strings::ERROR, "xiaozhi.uyuo.me 绑定米家", "sad");
-                display->SetChatMessage("system", message.c_str());
-                // display->SetEmotion("sad");
-                vTaskDelay(pdMS_TO_TICKS(retry_delay * 1000));
-                continue;
-            }
-            retry_delay *= 2;
-            break;
-        }
-        if (mi_.GetOpenIot())
-        {
-            xTaskCreate([](void *arg)
-                        {
-                            // auto& thing_manager = iot::ThingManager::GetInstance();
-                            // // thing_manager.AddThing(iot::CreateThing("Fan"));
-                            // thing_manager.InitMoit();
-                            Application *app = (Application *)arg;
-                            app->mi_.RegisterIot();
-                            vTaskDelete(NULL); //
-                        },
-                        "get_miot_info", 4096 * 2, this, 1, nullptr);
-
-            /* code */
+            ESP_LOGE(TAG, "Too many retries, exit version check");
+            display->SetChatMessage("system", "加载失败，请检查");
+            vTaskDelay(pdMS_TO_TICKS(retry_delay * 1000));
+            return;
         }
 
+        auto http = board.CreateHttp();
+        auto boardJson = board.GetJson();
+        http->SetHeader("Content-Type", "application/json");
+        std::string method = "POST";
+        if (!http->Open(method, url, boardJson))
+        {
+            ESP_LOGE(TAG, "Failed to open HTTP connection");
+            delete http;
+            continue;
+        }
+        auto response = http->GetBody();
+        delete http;
+        root_ = cJSON_Parse(response.c_str());
+        if (root_ == NULL)
+        {
+            ESP_LOGE(TAG, "Failed to parse JSON response");
+            continue;
+        }
+
+        cJSON *activation_code = cJSON_GetObjectItem(root_, "activation_code");
+        if (activation_code != NULL)
+        {
+            ESP_LOGE(TAG, "did not activation");
+            // Alert(Lang::Strings::ERROR, message.c_str(), "sad");
+            cJSON *code = cJSON_GetObjectItem(activation_code, "code");
+            cJSON *url = cJSON_GetObjectItem(activation_code, "url");
+            std::string message = std::string("请前往 ") + cJSON_GetStringValue(url) + " 绑定设备验证码" + cJSON_GetStringValue(code);
+            ESP_LOGI(TAG, "message is %s", message.c_str());
+            display->SetStatus("加载米家");
+            display->SetChatMessage("system", message.c_str());
+            // display->SetEmotion("sad");
+            vTaskDelay(pdMS_TO_TICKS(retry_delay * 1000));
+            continue;
+        }
+        cJSON *mihome = cJSON_GetObjectItem(root_, "mihome");
+        if (mihome == NULL or cJSON_IsFalse(mihome))
+        {
+            ESP_LOGE(TAG, "Get MiHome binding mi failed");
+            std::string message = "xiaozhi.uyuo.me 绑定米家";
+            ESP_LOGI(TAG, "message is %s", message.c_str());
+            display->SetChatMessage("system", message.c_str());
+            // Alert(Lang::Strings::ERROR, "xiaozhi.uyuo.me 绑定米家", "sad");
+            // display->SetChatMessage("system", "请前往 xiaozhi.uyuo.me 绑定米家");
+            // display->SetEmotion("sad");
+            vTaskDelay(pdMS_TO_TICKS(retry_delay * 1000));
+            continue;
+        }
         break;
     }
+    std::string mac = SystemInfo::GetMacAddress();
+
+    cJSON *mqtt = cJSON_GetObjectItem(root_, "mqtt");
+    if (mqtt == NULL)
+    {
+        ESP_LOGE(TAG, "MQTT not found in JSON response");
+        cJSON_Delete(mqtt);
+        return;
+    }
+
+    cJSON *broker = cJSON_GetObjectItem(mqtt, "broker");
+    if (broker == NULL)
+    {
+        ESP_LOGE(TAG, "Broker not found in JSON response");
+        cJSON_Delete(broker);
+        return;
+    }
+    cJSON *username = cJSON_GetObjectItem(mqtt, "username");
+    if (username == NULL)
+    {
+        ESP_LOGE(TAG, "Username not found in JSON response");
+        cJSON_Delete(username);
+        return;
+    }
+    cJSON *password = cJSON_GetObjectItem(mqtt, "password");
+    if (password == NULL)
+    {
+        ESP_LOGE(TAG, "Password not found in JSON response");
+        cJSON_Delete(password);
+        return;
+    }
+    cJSON *client_id = cJSON_GetObjectItem(mqtt, "client_id");
+    if (client_id == NULL)
+    {
+        ESP_LOGE(TAG, "Client ID not found in JSON response");
+        cJSON_Delete(client_id);
+        return;
+    }
+    cJSON *publish_topic = cJSON_GetObjectItem(mqtt, "publish_topic");
+    if (publish_topic == NULL)
+    {
+        ESP_LOGE(TAG, "Publish topic not found in JSON response");
+        cJSON_Delete(publish_topic);
+        return;
+    }
+    cJSON *subscribe_topic = cJSON_GetObjectItem(mqtt, "subscribe_topic");
+    if (subscribe_topic == NULL)
+    {
+        ESP_LOGE(TAG, "Subscribe topic not found in JSON response");
+        cJSON_Delete(subscribe_topic);
+        return;
+    }
+
+    // /api/v1/iot/mqtt
+    auto iot_mqtt_protocol_ = IotMqttProtocol::GetInstance();
+    iot_mqtt_protocol_.Start(broker->valuestring, client_id->valuestring, username->valuestring, password->valuestring, publish_topic->valuestring, subscribe_topic->valuestring);
+    iot_mqtt_protocol_.OnIncomingJson([](const cJSON *root)
+                                      {
+                                          ESP_LOGI(TAG, "Received message: %s", cJSON_Print(root));
+
+                                          //  cJSON *device_list_ = cJSON_GetObjectItem(root, "data");
+                                          cJSON *type = cJSON_GetObjectItem(root, "type");
+                                          auto &thing_manager = iot::ThingManager::GetInstance();
+                                          std::string mac = SystemInfo::GetMacAddress();
+                                          if (strcmp(type->valuestring, "device_discovery") == 0)
+                                          {
+
+                                              cJSON *item = cJSON_GetObjectItem(root, "data");
+                                              cJSON *name = cJSON_GetObjectItem(item, "name");
+                                              cJSON *title = cJSON_GetObjectItem(item, "title");
+                                              cJSON *token = cJSON_GetObjectItem(item, "token");
+                                              cJSON *did = cJSON_GetObjectItem(item, "did");
+                                              cJSON *miot = cJSON_GetObjectItem(item, "iot");
+
+                                              if (cJSON_IsNull(miot) == false)
+                                              {
+                                                  auto thing2 = iot::CreateThing("MIHOME");
+                                                  if (thing2 == nullptr)
+                                                  {
+                                                      ESP_LOGE(TAG, "Failed to create thing");
+                                                  }
+                                                  thing2->initMiot(token->valuestring, name->valuestring, did->valuestring, mac);
+                                                  cJSON *p = cJSON_GetObjectItem(miot, "p");
+                                                  cJSON *a = cJSON_GetObjectItem(miot, "a");
+                                                  thing2->registerProperty(p);
+                                                  thing2->registerAction(a);
+                                                  if (cJSON_IsNull(title))
+                                                  {
+                                                      thing2->set_name(name->valuestring);
+                                                      thing2->set_description(name->valuestring);
+                                                  }
+                                                  else
+                                                  {
+                                                      thing2->set_name(name->valuestring);
+                                                      thing2->set_description(title->valuestring);
+                                                  }
+                                                  thing2->set_did(did->valuestring);
+                                                  thing_manager.AddThing(thing2);
+                                              }
+
+                                              //  cJSON_Delete(item);
+                                          }
+                                          if (strcmp(type->valuestring, "device_status") == 0)
+                                          {
+
+                                              cJSON *item = cJSON_GetObjectItem(root, "data");
+                                              cJSON *did = cJSON_GetObjectItem(root, "did");
+                                              thing_manager.GetThing(did->valuestring)->setProperties(item);
+                                          }
+                                          //  } //
+                                      });
+    iot_mqtt_protocol_.addSubscribeTopic("mihome/" + SystemInfo::GetMacAddress());
+    iot_mqtt_protocol_.sendIotCommand("{\"type\":\"device_discovery\",\"mac\":\"" + SystemInfo::GetMacAddress() + "\"}");
+    return;
 }

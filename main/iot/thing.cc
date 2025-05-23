@@ -90,7 +90,7 @@ namespace iot
         }
     }
 
-    void Thing::initMiot(const std::string &ip, const std::string &token, const std::string &name, const std::string &deviceId, const std::string &mac)
+    void Thing::initMiot(const std::string &token, const std::string &name, const std::string &deviceId, const std::string &mac)
     {
     }
     void Thing::registerProperty(const cJSON *iot)
@@ -99,8 +99,11 @@ namespace iot
     void Thing::registerAction(const cJSON *iot)
     {
     }
-    void Thing::getProperties()
+    void Thing::setProperties(const cJSON *props)
     {
     }
+    // void Thing::setProps(const cJSON *props)
+    // {
+    // }
 
 } // namespace iot

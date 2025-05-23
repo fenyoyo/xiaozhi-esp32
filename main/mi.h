@@ -2,6 +2,7 @@
 #define _MI_H
 #include <string>
 #include "cJSON.h"
+#include "iot_mqtt_protocol.h"
 class Mi
 {
 public:
@@ -16,10 +17,11 @@ public:
     bool RegisterIot();
 
 private:
+    cJSON *root_;
     bool has_binding_ = false;
     bool has_mi_binding_ = false;
     std::string err_msg;
-
+    IotMqttProtocol iot_mqtt_protocol_;
     bool open_iot_ = false;
     cJSON *device_list_ = cJSON_CreateArray();
 

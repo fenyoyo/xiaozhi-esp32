@@ -1,5 +1,6 @@
 #include "miot_device.h"
 #include "iot/protocol.h"
+#include "iot_mqtt_protocol.h"
 #include <board.h>
 #include <esp_log.h>
 #include <cJSON.h>
@@ -14,6 +15,7 @@ namespace iot
 
     void MiotDevice::setCloudProperty(const std::string &did, const uint8_t &siid, const uint8_t &piid, const int &value, const bool &isBool)
     {
+        ESP_LOGI(TAG, "setCloudProperty");
         auto jsonStr = "[{\"did\": \"" + m_deviceId + "\",";
         jsonStr += "\"siid\": " + std::to_string(siid) + ",";
         jsonStr += "\"piid\": " + std::to_string(piid) + ",";
@@ -64,16 +66,16 @@ namespace iot
 
     void MiotDevice::sendCloud(const std::string &request)
     {
-        // ESP_LOGI(TAG, "request is %s", request.c_str());
-        Message msg;
-        msg.header.deviceID = 0;
-        std::string build = msg.build(request, m_token);
+        ESP_LOGI(TAG, "request is %s", request.c_str());
+        // Message msg;
+        // msg.header.deviceID = 0;
+        // std::string build = msg.build(request, m_token);
         // ESP_LOGI(TAG, "token is %s", m_token.c_str());
 
         std::string url = std::string(CONFIG_IOT_URL) + "api/v1/micloud/io3";
-        auto post_data = "{\"ciphertext\": \"" + Utils::stringToHexManual(build) + "\",\"mac\": \"" + mac_ + "\", \"did\": \"" + m_deviceId + "\"}";
+        auto post_data = "{\"command\": " + request + ",\"mac\": \"" + mac_ + "\", \"did\": \"" + m_deviceId + "\", \"type\": \"device_control\"}";
         std::string response = sendRequest(url, post_data);
-        userCallback(response);
+        // userCallback(response);
     }
 
     std::string MiotDevice::createRequest(const std::string &command, const std::string &parameters)
@@ -95,12 +97,18 @@ namespace iot
     {
         std::string url = std::string(CONFIG_IOT_URL) + "api/v1/micloud/props";
         auto post_data = "{\"did\": \"" + m_deviceId + "\",\"mac\": \"" + mac_ + "\"}";
-        std::string response = sendRequest(url, post_data);
+        std::string response = sendRequest2(url, post_data);
         // ESP_LOGI(TAG, "response is %s", response.c_str());
         userCallback(response);
     }
 
     std::string MiotDevice::sendRequest(const std::string &url, const std::string &post_data)
+    {
+        auto &iot_mqtt_protocol = IotMqttProtocol::GetInstance();
+        iot_mqtt_protocol.sendIotCommand(post_data);
+        return "";
+    }
+    std::string MiotDevice::sendRequest2(const std::string &url, const std::string &post_data)
     {
         auto &board = Board::GetInstance();
         auto http = board.CreateHttp();
@@ -150,4 +158,5 @@ namespace iot
         }
         return "";
     }
+
 } // namespace iot

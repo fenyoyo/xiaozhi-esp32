@@ -31,6 +31,18 @@ namespace iot
         bool GetStatesJson(std::string &json, bool delta = false);
         void Invoke(const cJSON *command);
 
+        Thing *GetThing(const std::string &did) const
+        {
+            for (auto &thing : things_)
+            {
+                if (thing->did() == did)
+                {
+                    return thing;
+                }
+            }
+            return nullptr;
+        }
+
     private:
         ThingManager() = default;
         ~ThingManager() = default;
