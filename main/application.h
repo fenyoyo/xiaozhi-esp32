@@ -22,6 +22,7 @@
 #include "mi.h"
 #include "background_task.h"
 #include "audio_processor.h"
+#include "iot_mqtt_protocol.h"
 
 #if CONFIG_USE_WAKE_WORD_DETECT
 #include "wake_word_detect.h"
@@ -119,7 +120,7 @@ private:
     OpusResampler input_resampler_;
     OpusResampler reference_resampler_;
     OpusResampler output_resampler_;
-
+    IotMqttProtocol iot_mqtt_protocol_;
     void MainEventLoop();
     void OnAudioInput();
     void OnAudioOutput();
