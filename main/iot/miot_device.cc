@@ -66,12 +66,7 @@ namespace iot
 
     void MiotDevice::sendCloud(const std::string &request)
     {
-        ESP_LOGI(TAG, "request is %s", request.c_str());
-        // Message msg;
-        // msg.header.deviceID = 0;
-        // std::string build = msg.build(request, m_token);
-        // ESP_LOGI(TAG, "token is %s", m_token.c_str());
-
+        // ESP_LOGI(TAG, "request is %s", request.c_str());
         std::string url = std::string(CONFIG_IOT_URL) + "api/v1/micloud/io3";
         auto post_data = "{\"command\": " + request + ",\"mac\": \"" + mac_ + "\", \"did\": \"" + m_deviceId + "\", \"type\": \"device_control\"}";
         std::string response = sendRequest(url, post_data);

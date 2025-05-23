@@ -72,7 +72,7 @@ bool IotMqttProtocol::StartMqttClient(bool report_error)
 
     mqtt_->OnMessage([this](const std::string &topic, const std::string &payload)
                      {
-                         ESP_LOGI(TAG, "Received message: %s", payload.c_str());
+                        //  ESP_LOGI(TAG, "Received message: %s", payload.c_str());
                          cJSON *root = cJSON_Parse(payload.c_str());
                          if (root == nullptr)
                          {
@@ -133,7 +133,7 @@ bool IotMqttProtocol::addSubscribeTopic(const std::string &text)
 
 bool IotMqttProtocol::sendIotCommand(const std::string &text)
 {
-    ESP_LOGI(TAG, "publish message: %s", text.c_str());
+    // ESP_LOGI(TAG, "publish message: %s", text.c_str());
     // if (publish_topic_.empty())
     // {
     //     return false;

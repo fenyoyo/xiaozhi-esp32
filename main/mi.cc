@@ -208,7 +208,9 @@ void Mi::RegisterIot()
                                          }
                                          //  } //
                                      });
+
     iot_mqtt_protocol.addSubscribeTopic("mihome/" + SystemInfo::GetMacAddress());
+    vTaskDelay(pdMS_TO_TICKS(300));
     iot_mqtt_protocol.sendIotCommand("{\"type\":\"device_discovery\",\"mac\":\"" + SystemInfo::GetMacAddress() + "\"}");
 
     // auto &thing_manager = iot::ThingManager::GetInstance();

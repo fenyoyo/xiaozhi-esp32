@@ -87,7 +87,7 @@ namespace iot
                         // ESP_LOGI(TAG, "iid:%s value false",iid->valuestring);
                     }
 
-                    ESP_LOGI(TAG, "iid:%s type:%d  value:%f", iid->valuestring, spec->second->type, spec->second->valuedouble);
+                    // ESP_LOGI(TAG, "iid:%s type:%d  value:%f", iid->valuestring, spec->second->type, spec->second->valuedouble);
                 }
                 else
                 {
@@ -193,7 +193,7 @@ namespace iot
                     methods_.AddMethod(mn->valuestring, d->valuestring, ParameterList({Parameter("value", pd->valuestring, static_cast<ValueType>(v->valueint), true)}), [this, did, s, p, v, item](const ParameterList &parameters)
                                        {
                         // ESP_LOGI(TAG, "id%s", ip_.c_str());
-                        ESP_LOGI(TAG, "item %s", cJSON_PrintUnformatted(item));
+                        // ESP_LOGI(TAG, "item %s", cJSON_PrintUnformatted(item));
                         if (static_cast<ValueType>(v->valueint) == kValueTypeBoolean)
                         {
                             auto value = static_cast<int>(parameters["value"].boolean());
