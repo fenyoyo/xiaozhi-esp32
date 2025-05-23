@@ -664,7 +664,7 @@ void Application::Start()
             } }); });
     wake_word_detect_.StartDetection();
 #endif
-
+    MiHome();
     // Wait for the new version check to finish
     xEventGroupWaitBits(event_group_, CHECK_NEW_VERSION_DONE_EVENT, pdTRUE, pdFALSE, portMAX_DELAY);
     SetDeviceState(kDeviceStateIdle);
@@ -1094,4 +1094,10 @@ void Application::SendMcpMessage(const std::string &payload)
         if (protocol_) {
             protocol_->SendMcpMessage(payload);
         } });
+}
+
+void Application::MiHome()
+{
+    mi_.RegisterIot();
+    return;
 }
