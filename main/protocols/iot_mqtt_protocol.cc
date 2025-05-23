@@ -12,7 +12,7 @@
 #include "assets/lang_config.h"
 #include <system_info.h>
 
-#define TAG "MQTT"
+#define TAG "IOT_MQTT"
 
 IotMqttProtocol::IotMqttProtocol()
 {
