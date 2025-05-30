@@ -15,7 +15,7 @@ namespace iot
 
     void MiotDevice::setCloudProperty(const std::string &did, const uint8_t &siid, const uint8_t &piid, const int &value, const bool &isBool)
     {
-        ESP_LOGI(TAG, "setCloudProperty");
+        // ESP_LOGI(TAG, "setCloudProperty");
         auto jsonStr = "[{\"did\": \"" + m_deviceId + "\",";
         jsonStr += "\"siid\": " + std::to_string(siid) + ",";
         jsonStr += "\"piid\": " + std::to_string(piid) + ",";

@@ -100,6 +100,7 @@ namespace iot
             token_ = token;
             set_description(name);
             // set_name(token);
+            ESP_LOGI(TAG, "设备：%s 加载中，did:%s", name.c_str(), deviceId.c_str());
             miotDevice = MiotDevice(ip_, token_, deviceId, mac);
             miotDevice.setCallback([this](const std::string &data)
                                    {
@@ -188,6 +189,7 @@ namespace iot
                     ESP_LOGE(TAG, "pd is null");
                     continue;
                 }
+
                 if ((static_cast<uint8_t>(a->valueint) & static_cast<uint8_t>(Permission::WRITE)) != 0)
                 {
                     methods_.AddMethod(mn->valuestring, d->valuestring, ParameterList({Parameter("value", pd->valuestring, static_cast<ValueType>(v->valueint), true)}), [this, did, s, p, v, item](const ParameterList &parameters)
