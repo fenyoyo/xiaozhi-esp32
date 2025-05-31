@@ -34,7 +34,8 @@
 #define SEND_AUDIO_EVENT (1 << 1)
 #define CHECK_NEW_VERSION_DONE_EVENT (1 << 2)
 
-enum AecMode {
+enum AecMode
+{
     kAecOff,
     kAecOnDeviceSide,
     kAecOnServerSide,
@@ -85,7 +86,7 @@ public:
     void WakeWordInvoke(const std::string &wake_word);
     void PlaySound(const std::string_view &sound);
     bool CanEnterSleepMode();
-    void SendMcpMessage(const std::string& payload);
+    void SendMcpMessage(const std::string &payload);
     void SetAecMode(AecMode mode);
     AecMode GetAecMode() const { return aec_mode_; }
 
@@ -145,7 +146,6 @@ private:
     void OnClockTimer();
     void SetListeningMode(ListeningMode mode);
     void AudioLoop();
-    void MiHome();
 };
 
 #endif // _APPLICATION_H_

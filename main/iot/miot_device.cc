@@ -87,70 +87,10 @@ namespace iot
         request += "}";
         return request;
     }
-
-    void MiotDevice::getProperties()
-    {
-        std::string url = std::string(CONFIG_IOT_URL) + "api/v1/micloud/props";
-        auto post_data = "{\"did\": \"" + m_deviceId + "\",\"mac\": \"" + mac_ + "\"}";
-        std::string response = sendRequest2(url, post_data);
-        // ESP_LOGI(TAG, "response is %s", response.c_str());
-        userCallback(response);
-    }
-
     std::string MiotDevice::sendRequest(const std::string &url, const std::string &post_data)
     {
         auto &iot_mqtt_protocol = IotMqttProtocol::GetInstance();
         iot_mqtt_protocol.sendIotCommand(post_data);
-        return "";
-    }
-    std::string MiotDevice::sendRequest2(const std::string &url, const std::string &post_data)
-    {
-        auto &board = Board::GetInstance();
-        auto http = board.CreateHttp();
-        http->SetHeader("Content-Type", "application/json");
-        std::string method = "POST";
-        std::string devicesJsonStr;
-
-        // auto _post_data = Utils::stringToHexManual(post_data);
-        // ESP_LOGI(TAG, "post data is %s", post_data.c_str());
-        if (!http->Open(method, url, post_data))
-        {
-            ESP_LOGE(TAG, "Failed to open HTTP connection");
-            delete http;
-            if (devicesJsonStr.empty())
-            {
-                ESP_LOGE(TAG, "Failed to get devices from micloud");
-                return "";
-            }
-        }
-        else
-        {
-            if (http->GetStatusCode() == 200)
-            {
-                ESP_LOGI(TAG, "HTTP request succeeded");
-                auto response = http->GetBody();
-                // ESP_LOGI(TAG, "devices response:%s", response.c_str());
-                if (response.empty())
-                {
-                    ESP_LOGE(TAG, "Failed to get response from server 2");
-                    http->Close();
-                    delete http;
-                    return "";
-                }
-                // return response;
-                http->Close();
-                delete http;
-                // ESP_LOGI(TAG, "devices response:%s", response.c_str());
-                return response;
-            }
-            else
-            {
-                ESP_LOGE(TAG, "HTTP request failed with status code: %d", http->GetStatusCode());
-                http->Close();
-                delete http;
-                return "";
-            }
-        }
         return "";
     }
 

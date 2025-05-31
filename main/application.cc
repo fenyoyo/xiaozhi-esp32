@@ -685,7 +685,7 @@ void Application::Start()
 #endif
     wake_word_detect_.StartDetection();
 #endif
-    MiHome();
+    mi_.RegisterIot();
     // Wait for the new version check to finish
     xEventGroupWaitBits(event_group_, CHECK_NEW_VERSION_DONE_EVENT, pdTRUE, pdFALSE, portMAX_DELAY);
     SetDeviceState(kDeviceStateIdle);
@@ -980,7 +980,7 @@ void Application::SetDeviceState(DeviceState state)
         display->SetEmotion("neutral");
         audio_processor_->Stop();
 
-#if CONFIG_USE_WAKE_WORD_DETECT
+#if CONFIG_USE_WAKE_WORD_DETECT || CONFIG_USE_WAKE_WORD_DETECT_NO_AFE
         wake_word_detect_.StartDetection();
 #endif
         break;
@@ -1004,13 +1004,13 @@ void Application::SetDeviceState(DeviceState state)
         {
             // Send the start listening command
             protocol_->SendStartListening(listening_mode_);
-            if (listening_mode_ == kListeningModeAutoStop && previous_state == kDeviceStateSpeaking)
+            if (previous_state == kDeviceStateSpeaking)
             {
                 // FIXME: Wait for the speaker to empty the buffer
                 vTaskDelay(pdMS_TO_TICKS(120));
             }
             opus_encoder_->ResetState();
-#if CONFIG_USE_WAKE_WORD_DETECT
+#if CONFIG_USE_WAKE_WORD_DETECT || CONFIG_USE_WAKE_WORD_DETECT_NO_AFE
             wake_word_detect_.StopDetection();
 #endif
             audio_processor_->Start();
@@ -1022,169 +1022,121 @@ void Application::SetDeviceState(DeviceState state)
         if (listening_mode_ != kListeningModeRealtime)
         {
             audio_processor_->Stop();
-
 #if CONFIG_USE_WAKE_WORD_DETECT || CONFIG_USE_WAKE_WORD_DETECT_NO_AFE
             wake_word_detect_.StartDetection();
 #endif
-            break;
-        case kDeviceStateConnecting:
-            display->SetStatus(Lang::Strings::CONNECTING);
-            display->SetEmotion("neutral");
-            display->SetChatMessage("system", "");
-            timestamp_queue_.clear();
-            last_output_timestamp_ = 0;
-            break;
-        case kDeviceStateListening:
-            display->SetStatus(Lang::Strings::LISTENING);
-            display->SetEmotion("neutral");
-            // Update the IoT states before sending the start listening command
+        }
+        ResetDecoder();
+        break;
+    default:
+        // Do nothing
+        break;
+    }
+}
+
+void Application::ResetDecoder()
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    opus_decoder_->ResetState();
+    audio_decode_queue_.clear();
+    audio_decode_cv_.notify_all();
+    last_output_time_ = std::chrono::steady_clock::now();
+    auto codec = Board::GetInstance().GetAudioCodec();
+    codec->EnableOutput(true);
+}
+
+void Application::SetDecodeSampleRate(int sample_rate, int frame_duration)
+{
+    if (opus_decoder_->sample_rate() == sample_rate && opus_decoder_->duration_ms() == frame_duration)
+    {
+        return;
+    }
+
+    opus_decoder_.reset();
+    opus_decoder_ = std::make_unique<OpusDecoderWrapper>(sample_rate, 1, frame_duration);
+
+    auto codec = Board::GetInstance().GetAudioCodec();
+    if (opus_decoder_->sample_rate() != codec->output_sample_rate())
+    {
+        ESP_LOGI(TAG, "Resampling audio from %d to %d", opus_decoder_->sample_rate(), codec->output_sample_rate());
+        output_resampler_.Configure(opus_decoder_->sample_rate(), codec->output_sample_rate());
+    }
+}
+
+void Application::UpdateIotStates()
+{
 #if CONFIG_IOT_PROTOCOL_XIAOZHI
-            UpdateIotStates();
+    auto &thing_manager = iot::ThingManager::GetInstance();
+    std::string states;
+    if (thing_manager.GetStatesJson(states, true))
+    {
+        protocol_->SendIotStates(states);
+    }
 #endif
+}
 
-            // Make sure the audio processor is running
-            if (!audio_processor_->IsRunning())
-            {
-                // Send the start listening command
-                protocol_->SendStartListening(listening_mode_);
-                if (previous_state == kDeviceStateSpeaking)
-                {
-                    // FIXME: Wait for the speaker to empty the buffer
-                    vTaskDelay(pdMS_TO_TICKS(120));
-                }
-                opus_encoder_->ResetState();
-#if CONFIG_USE_WAKE_WORD_DETECT || CONFIG_USE_WAKE_WORD_DETECT_NO_AFE
-                wake_word_detect_.StopDetection();
-#endif
-                audio_processor_->Start();
-            }
-            break;
-        case kDeviceStateSpeaking:
-            display->SetStatus(Lang::Strings::SPEAKING);
+void Application::Reboot()
+{
+    ESP_LOGI(TAG, "Rebooting...");
+    esp_restart();
+}
 
-            if (listening_mode_ != kListeningModeRealtime)
-            {
-                audio_processor_->Stop();
-#if CONFIG_USE_WAKE_WORD_DETECT || CONFIG_USE_WAKE_WORD_DETECT_NO_AFE
-                wake_word_detect_.StartDetection();
-#endif
-            }
-            ResetDecoder();
-            break;
-        default:
-            // Do nothing
-            break;
-        }
-    }
-
-    void Application::ResetDecoder()
+void Application::WakeWordInvoke(const std::string &wake_word)
+{
+    if (device_state_ == kDeviceStateIdle)
     {
-        std::lock_guard<std::mutex> lock(mutex_);
-        opus_decoder_->ResetState();
-        audio_decode_queue_.clear();
-        audio_decode_cv_.notify_all();
-        last_output_time_ = std::chrono::steady_clock::now();
-        auto codec = Board::GetInstance().GetAudioCodec();
-        codec->EnableOutput(true);
-    }
-
-    void Application::SetDecodeSampleRate(int sample_rate, int frame_duration)
-    {
-        if (opus_decoder_->sample_rate() == sample_rate && opus_decoder_->duration_ms() == frame_duration)
-        {
-            return;
-        }
-
-        opus_decoder_.reset();
-        opus_decoder_ = std::make_unique<OpusDecoderWrapper>(sample_rate, 1, frame_duration);
-
-        auto codec = Board::GetInstance().GetAudioCodec();
-        if (opus_decoder_->sample_rate() != codec->output_sample_rate())
-        {
-            ESP_LOGI(TAG, "Resampling audio from %d to %d", opus_decoder_->sample_rate(), codec->output_sample_rate());
-            output_resampler_.Configure(opus_decoder_->sample_rate(), codec->output_sample_rate());
-        }
-    }
-
-    void Application::UpdateIotStates()
-    {
-#if CONFIG_IOT_PROTOCOL_XIAOZHI
-        auto &thing_manager = iot::ThingManager::GetInstance();
-        std::string states;
-        if (thing_manager.GetStatesJson(states, true))
-        {
-            protocol_->SendIotStates(states);
-        }
-#endif
-    }
-
-    void Application::Reboot()
-    {
-        ESP_LOGI(TAG, "Rebooting...");
-        esp_restart();
-    }
-
-    void Application::WakeWordInvoke(const std::string &wake_word)
-    {
-        if (device_state_ == kDeviceStateIdle)
-        {
-            ToggleChatState();
-            Schedule([this, wake_word]()
-                     {
+        ToggleChatState();
+        Schedule([this, wake_word]()
+                 {
             if (protocol_) {
                 protocol_->SendWakeWordDetected(wake_word); 
             } });
-        }
-        else if (device_state_ == kDeviceStateSpeaking)
-        {
-            Schedule([this]()
-                     { AbortSpeaking(kAbortReasonNone); });
-        }
-        else if (device_state_ == kDeviceStateListening)
-        {
-            Schedule([this]()
-                     {
+    }
+    else if (device_state_ == kDeviceStateSpeaking)
+    {
+        Schedule([this]()
+                 { AbortSpeaking(kAbortReasonNone); });
+    }
+    else if (device_state_ == kDeviceStateListening)
+    {
+        Schedule([this]()
+                 {
             if (protocol_) {
                 protocol_->CloseAudioChannel();
             } });
-        }
+    }
+}
+
+bool Application::CanEnterSleepMode()
+{
+    if (device_state_ != kDeviceStateIdle)
+    {
+        return false;
     }
 
-    bool Application::CanEnterSleepMode()
+    if (protocol_ && protocol_->IsAudioChannelOpened())
     {
-        if (device_state_ != kDeviceStateIdle)
-        {
-            return false;
-        }
-
-        if (protocol_ && protocol_->IsAudioChannelOpened())
-        {
-            return false;
-        }
-
-        // Now it is safe to enter sleep mode
-        return true;
+        return false;
     }
 
-    void Application::SendMcpMessage(const std::string &payload)
-    {
-        Schedule([this, payload]()
-                 {
+    // Now it is safe to enter sleep mode
+    return true;
+}
+
+void Application::SendMcpMessage(const std::string &payload)
+{
+    Schedule([this, payload]()
+             {
         if (protocol_) {
             protocol_->SendMcpMessage(payload);
         } });
-    }
+}
 
-    void Application::MiHome()
-    {
-        mi_.RegisterIot();
-        return;
-    }
-    void Application::SetAecMode(AecMode mode)
-    {
-        aec_mode_ = mode;
-        Schedule([this]()
-                 {
+void Application::SetAecMode(AecMode mode)
+{
+    aec_mode_ = mode;
+    Schedule([this]()
+             {
         auto& board = Board::GetInstance();
         auto display = board.GetDisplay();
         switch (aec_mode_) {
@@ -1206,4 +1158,4 @@ void Application::SetDeviceState(DeviceState state)
         if (protocol_ && protocol_->IsAudioChannelOpened()) {
             protocol_->CloseAudioChannel();
         } });
-    }
+}

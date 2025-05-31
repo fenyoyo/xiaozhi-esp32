@@ -53,13 +53,14 @@ void Mi::RegisterIot()
         auto boardJson = board.GetJson();
         http->SetHeader("Content-Type", "application/json");
         std::string method = "POST";
-        if (!http->Open(method, url, boardJson))
+        http->SetContent(std::move(boardJson));
+        if (!http->Open(method, url))
         {
             ESP_LOGE(TAG, "Failed to open HTTP connection");
             delete http;
             continue;
         }
-        auto response = http->GetBody();
+        auto response = http->ReadAll();
         delete http;
         root_ = cJSON_Parse(response.c_str());
         if (root_ == NULL)
