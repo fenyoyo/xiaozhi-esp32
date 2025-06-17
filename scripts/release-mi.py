@@ -7,6 +7,8 @@ import shutil
 # 切换到项目根目录
 os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+#支持的设备型号列表
+SUPPORTED_BOARD_TYPES = ["bread-compact-wifi", "bread-compact-wifi-lcd","xingzhi-cube-0.85tft-ml307","xingzhi-cube-0.85tft-wifi","xingzhi-cube-0.96oled-wifi","xingzhi-cube-0.96oled-ml307","xingzhi-cube-1.54tft-wifi","xingzhi-cube-1.54tft-ml307","lichuang-dev","movecall-moji-esp32s3"]
 def get_board_type():
     with open("build/compile_commands.json") as f:
         data = json.load(f)
@@ -78,7 +80,7 @@ def get_all_board_types():
 
 def release(board_type, board_config):
     config_path = f"main/boards/{board_type}/config.json"
-    if board_type not in ["bread-compact-wifi", "bread-compact-wifi-lcd","xingzhi-cube-0.85tft-ml307","xingzhi-cube-0.85tft-wifi","xingzhi-cube-0.96oled-wifi","xingzhi-cube-0.96oled-ml307","xingzhi-cube-1.54tft-wifi","xingzhi-cube-1.54tft-ml307","lichuang-dev"]:
+    if board_type not in SUPPORTED_BOARD_TYPES:
         print(f"跳过 {board_type} 因为不支持")
         return
     

@@ -178,6 +178,7 @@ void Mi::RegisterIot()
                                                  if (thing2 == nullptr)
                                                  {
                                                      ESP_LOGE(TAG, "Failed to create thing");
+                                                     return;
                                                  }
                                                  thing2->initMiot(token->valuestring, name->valuestring, did->valuestring, mac);
                                                  cJSON *p = cJSON_GetObjectItem(miot, "p");
